@@ -11,6 +11,7 @@ def process(text):
     variables = store_vars(text)
     text = handle_whitespace(text)
     links = hash_links(text)
+    text = convert_lists(text)
     text = link_re.sub(link_sub, text)
     text = code_re.sub(code_sub, text)
     text = emphasis_re.sub(emphasis_sub, text)
@@ -48,6 +49,79 @@ def store_vars(text):
     """
     return {var: value for var, value in vars_re.findall(text)}
 
+ulist_re = re.compile(r"""
+(
+    (?:
+        (?P<space>[ \t]*)
+        (?P<marker>[*+-])
+        (?!\ (?P=marker)\ )
+        [\t ]+
+        (?:.+?)
+        (?:
+            \Z
+           |
+            \n
+            (?=
+                [ \t]*[*+-][ \t]+
+            )
+            (?!
+                (?P=space)[ \t]+[*+-][ \t]+
+            )
+           |
+            \n\n+
+            (?=\S)
+        )
+    )+
+)
+""", re.S | re.X)
+
+olist_re = re.compile(r"""
+(
+    (?:
+        (?P<space>[ \t]*)
+        \d+\.
+        [\t ]+
+        (?:.+?)
+        (?:
+            \Z
+           |
+            \n
+            (?=
+                [ \t]*\d+\.[ \t]+
+            )
+            (?!
+                (?P=space)[ \t]+\d+\.[ \t]+
+            )
+           |
+            \n\n+
+            (?=\S)
+        )
+    )+
+)
+""", re.S | re.X)
+
+def convert_lists(text):
+    pos = 0
+    while True:
+        match = ulist_re.search(text, pos)
+        if not match:
+            break
+        first_list = match.group(1).strip()
+        start = len(re.match(r'[ \t]*', first_list).group(0))
+        whole_list = re.split(r'\n {%d}[+*-] ' % start,
+                              '\n' + first_list)[1:]
+        items = []
+        for item in whole_list:
+            item = '\n'.join(re.split(r'\n {%d}' % start, item))
+            items.append(convert_lists(item))
+        list_str = '<ul>\n<li>\n' + \
+                   '\n</li>\n<li>\n'.join(items) + \
+                   '\n</li>\n</ul>\n'
+        start = text.index(first_list)
+        end = start + len(first_list)
+        text = text[:start] + list_str.strip() + text[end:]
+        pos = end
+    return text
 
 link_re = re.compile(r'(?<!\\)(!?)\[(.*?)\]\((.*?)\)', re.S)
 def link_sub(match):
