@@ -13,7 +13,7 @@ def process(text):
     links = hash_links(text)
     text = convert_lists(text, True)
     text = convert_lists(text, False)
-    text = codeblock_re.sub(codeblock_sub, text)
+    text, mappings = hash_codeblocks(text)
     text = link_re.sub(link_sub, text)
     text = code_re.sub(code_sub, text)
     text = emphasis_re.sub(emphasis_sub, text)
@@ -21,6 +21,7 @@ def process(text):
     text = setext_header_re.sub(setext_header_sub, text)
     text = escape_re.sub(escapes_sub, text)
     text = unhash_links(text, links)
+    text = unhash_codeblocks(text, mappings)
     return text
 
 TAB_SIZE = 4
@@ -143,20 +144,33 @@ def convert_lists(text, is_ulist):
 
 codeblock_re = re.compile(r"""
     (
+        \n
         (?:
             (?:
                 (?:[ ]{4}|\t)
                 (?:.+?)
-            )?
-            (?:\n|\Z)
+            )
+            (?:\n+|\Z)
         )+
     )
 """, re.S | re.X)
-def codeblock_sub(match):
-    codeblock = match.group(0)
-    codeblock = re.sub(r'(?<=\n) {4}', '', codeblock, re.S).lstrip('\n')
-    hashed = hash_text(codeblock)
-    return '<pre>{}</pre>'.format(hashed)
+
+def hash_codeblocks(text):
+    mappings = {}
+    for codeblock in codeblock_re.findall(text):
+        mappings[hash_text(codeblock)] = codeblock
+    text = codeblock_re.sub(lambda m: 'pre-' + hash_text(m.group(0)), text)
+    print(text)
+    return text, mappings
+
+def unhash_codeblocks(text, mappings):
+    def retrieve_match(match):
+        codeblock = mappings[match.group(1)]
+        codeblock = re.sub(r'(?<=\n) {4}', '', codeblock, re.S).lstrip('\n')
+        return '\n<pre>{}</pre>\n'.format(codeblock)
+    text = re.sub(r'pre-(sha1-[0-9a-f]+)', retrieve_match, text)
+    return text
+
 
 link_re = re.compile(r'(?<!\\)(!?)\[(.*?)\]\((.*?)\)', re.S)
 def link_sub(match):
@@ -170,7 +184,7 @@ def link_sub(match):
     """
     is_img = match.group(1) != ''
     content = match.group(2)
-    link = hash_text(match.group(3))
+    link = 'link-' + hash_text(match.group(3))
     if is_img:
         return '<img src="{0}" alt="{1}">'.format(link, content)
     return '<a href="{0}">{1}</a>'.format(link, content)
@@ -190,7 +204,7 @@ def unhash_links(text, links):
     """Reverts link hashes in text back to the links themselves."""
     def retrieve_link(match):
         return links[match.group(1)]
-    text = re.sub(r'(sha1-[0-9a-f]+)', retrieve_link, text)
+    text = re.sub(r'link-(sha1-[0-9a-f]+)', retrieve_link, text)
     return text
 
 code_re = re.compile(r'(?<!\\)(?P<ticks>`+) ?(.*?) ?(?P=ticks)', re.S)
