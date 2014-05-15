@@ -11,7 +11,8 @@ def process(text):
     variables = store_vars(text)
     text = handle_whitespace(text)
     links = hash_links(text)
-    text = convert_lists(text)
+    text = convert_lists(text, True)
+    text = convert_lists(text, False)
     text = link_re.sub(link_sub, text)
     text = code_re.sub(code_sub, text)
     text = emphasis_re.sub(emphasis_sub, text)
@@ -51,6 +52,7 @@ def store_vars(text):
 
 ulist_re = re.compile(r"""
 (
+    (?<=\n)
     (?:
         (?P<space>[ \t]*)
         (?P<marker>[*+-])
@@ -77,6 +79,7 @@ ulist_re = re.compile(r"""
 
 olist_re = re.compile(r"""
 (
+    (?<=\n)
     (?:
         (?P<space>[ \t]*)
         \d+\.
@@ -100,26 +103,40 @@ olist_re = re.compile(r"""
 )
 """, re.S | re.X)
 
-def convert_lists(text):
+def convert_lists(text, is_ulist):
     pos = 0
+    list_re = ulist_re if is_ulist else olist_re
+    tag = 'ul' if is_ulist else 'ol'
+    marker = '[+*-]' if is_ulist else '\d+\.'
     while True:
-        match = ulist_re.search(text, pos)
+        match = list_re.search(text, pos)
         if not match:
             break
-        first_list = match.group(1).strip()
+        first_list = match.group(1)
         start = len(re.match(r'[ \t]*', first_list).group(0))
-        whole_list = re.split(r'\n {%d}[+*-] ' % start,
+        whole_list = re.split(r'\n(?= {%d}%s )' % (start, marker),
                               '\n' + first_list)[1:]
         items = []
+        def truncate(match):
+            space = len(match.group(1))
+            if space % 4 == 0:
+                return ' '*(space - 4)
+            return ' '*(space - space%4)
+
         for item in whole_list:
-            item = '\n'.join(re.split(r'\n {%d}' % start, item))
-            items.append(convert_lists(item))
-        list_str = '<ul>\n<li>\n' + \
-                   '\n</li>\n<li>\n'.join(items) + \
-                   '\n</li>\n</ul>\n'
+            item = re.sub(marker, lambda m: ' '*len(m.group(0)), item, 1)
+            item = convert_lists(item, is_ulist)
+            item = re.sub(r'(?:(?<=\n)|\A)( *)', truncate, item)
+            items.append(
+                    ' '*start + '<li>\n' +
+                    item + \
+                    '\n' + ' '*start + '</li>\n')
+        list_str = (' '*start) + '<{}>\n'.format(tag) + \
+                   '\n'.join(items) + \
+                   ' '*start + '</{}>\n'.format(tag)
         start = text.index(first_list)
         end = start + len(first_list)
-        text = text[:start] + list_str.strip() + text[end:]
+        text = text[:start] + list_str + text[end:]
         pos = end
     return text
 
