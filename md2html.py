@@ -13,6 +13,7 @@ def process(text):
     links = hash_links(text)
     text = convert_lists(text, True)
     text = convert_lists(text, False)
+    text = codeblock_re.sub(codeblock_sub, text)
     text = link_re.sub(link_sub, text)
     text = code_re.sub(code_sub, text)
     text = emphasis_re.sub(emphasis_sub, text)
@@ -139,6 +140,23 @@ def convert_lists(text, is_ulist):
         text = text[:start] + list_str + text[end:]
         pos = end
     return text
+
+codeblock_re = re.compile(r"""
+    (
+        (?:
+            (?:
+                (?:[ ]{4}|\t)
+                (?:.+?)
+            )?
+            (?:\n|\Z)
+        )+
+    )
+""", re.S | re.X)
+def codeblock_sub(match):
+    codeblock = match.group(0)
+    codeblock = re.sub(r'(?<=\n) {4}', '', codeblock, re.S).lstrip('\n')
+    hashed = hash_text(codeblock)
+    return '<pre>{}</pre>'.format(hashed)
 
 link_re = re.compile(r'(?<!\\)(!?)\[(.*?)\]\((.*?)\)', re.S)
 def link_sub(match):
