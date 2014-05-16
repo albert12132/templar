@@ -3,29 +3,86 @@ from random import randint
 from hashlib import sha1
 import cgi
 
+TAB_SIZE = 4
 SALT = bytes(randint(0, 1000000))
-def hash_text(s):
-    return 'sha1-' + sha1(SALT + s.encode("utf-8")).hexdigest()
+def hash_text(s, label):
+    return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest()
 
 def process(text):
     text = handle_whitespace(text)
     text, variables = store_vars(text)
-    links = hash_links(text)
-    text = convert_lists(text, True)
-    text = convert_lists(text, False)
-    text, mappings = hash_codeblocks(text)
+    hashes = {}
+    text = hash_codeblocks(text, hashes)
     text = blockquote_re.sub(blockquote_sub, text)
-    text = link_re.sub(link_sub, text)
-    text = code_re.sub(code_sub, text)
-    text = emphasis_re.sub(emphasis_sub, text)
-    text = atx_header_re.sub(atx_header_sub, text)
-    text = setext_header_re.sub(setext_header_sub, text)
-    text = escape_re.sub(escapes_sub, text)
-    text = unhash_links(text, links)
-    text = unhash_codeblocks(text, mappings)
+    # links = hash_links(text)
+    # text = convert_lists(text, True)
+    # text = convert_lists(text, False)
+    # text, codes = hash_codes(text)
+    # text, tags = hash_tags(text)
+    # text = link_re.sub(link_sub, text)
+    # text = emphasis_re.sub(emphasis_sub, text)
+    # text = atx_header_re.sub(atx_header_sub, text)
+    # text = setext_header_re.sub(setext_header_sub, text)
+    # text = escape_re.sub(escapes_sub, text)
+    # text = paragraph_re.sub(paragraph_sub, text)
+    # text = unhash_links(text, links)
+    # text = unhash_codes(text, codes)
+    # text = unhash_tags(text, tags)
+    # text = unhash_codeblocks(text, mappings)
     return text
 
-TAB_SIZE = 4
+codeblock_re = re.compile(r"""
+    (
+        (?:(?<=\n)|(?<=\A))
+        [ ]{4}.+?\n
+        (?:
+            \n
+           |
+            (?:
+                [ ]{4}.+?\n
+            )
+        )+
+        (?=\n*(?![ ]{4}))
+    )
+""", re.S | re.X)
+def hash_codeblocks(text, hashes):
+    def codeblock_sub(match):
+        block = match.group(1).rstrip('\n')
+        block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
+        hashed = hash_text(block, 'pre')
+        hashes[hashed] = block
+        return hashed + '\n\n'
+    return codeblock_re.sub(codeblock_sub, text)
+
+blockquote_re = re.compile(r"""
+    (
+        (?:(?<=\n)|(?<=\A))
+        >.*?\n
+        (?:[^\n]+?\n)*
+        (?:
+            (?:
+                >.*?\n
+                (?:[^\n]+?\n)*
+            )
+           |
+            \n
+        )+
+        (?=\n*(?!>))
+    )
+""", re.S | re.X)
+def blockquote_sub(match):
+    block = match.group(1).rstrip('\n')
+    block = re.sub(r'(?:(?<=\n)|(?<=\A))> ?', '', block)
+    return '<blockquote>\n{}\n</blockquote>\n\n'.format(block)
+
+def unhash_codeblocks(text, mappings):
+    def retrieve_match(match):
+        codeblock = mappings[match.group(1)]
+        codeblock = re.sub(r'(?<=\n) {4}', '', codeblock, re.S).lstrip('\n')
+        return '\n<pre>{}</pre>\n'.format(codeblock)
+    text = re.sub(r'pre-(sha1-[0-9a-f]+)', retrieve_match, text)
+    return text
+
 retab_re = re.compile(r'(.*?)\t', re.M)
 def retab_sub(match):
     before = match.group(1)
@@ -54,6 +111,29 @@ def store_vars(text):
     variables = {var: value for var, value in vars_re.findall(text)}
     text = vars_re.sub('', text)
     return text, variables
+
+tag_re = re.compile(r'<[\w\s:/]+?>', re.S)
+def hash_tags(text):
+    tags = {}
+    for tag in tag_re.findall(text):
+        tags[hash_text(tag)] = tag
+    text = tag_re.sub(lambda m: 'tag-' + hash_text(m.group(0)), text)
+    return text, tags
+
+def unhash_tags(text, tags):
+    def retrieve_match(match):
+        return tags[match.group(1)]
+    text = re.sub(r'tag-(sha1-[0-9a-f]+)', retrieve_match, text)
+    return text
+
+paragraph_re = re.compile(r"""
+    (?<=\n\n)
+    (?!<(?:ul|ol|li|pre|h\d)>)
+    (.+?)
+    (?=\n{2,})
+""", re.S | re.X)
+def paragraph_sub(match):
+    return '<p>{}</p>'.format(match.group(1))
 
 ulist_re = re.compile(r"""
 (
@@ -145,50 +225,7 @@ def convert_lists(text, is_ulist):
         pos = end
     return text
 
-codeblock_re = re.compile(r"""
-    (
-        \n
-        (?:
-            (?:
-                (?:[ ]{4}|\t)
-                (?:.+?)
-            )
-            (?:\n+|\Z)
-        )+
-    )
-""", re.S | re.X)
 
-def hash_codeblocks(text):
-    mappings = {}
-    for codeblock in codeblock_re.findall(text):
-        mappings[hash_text(codeblock)] = codeblock
-    text = codeblock_re.sub(lambda m: 'pre-' + hash_text(m.group(0)), text)
-    return text, mappings
-
-def unhash_codeblocks(text, mappings):
-    def retrieve_match(match):
-        codeblock = mappings[match.group(1)]
-        codeblock = re.sub(r'(?<=\n) {4}', '', codeblock, re.S).lstrip('\n')
-        return '\n<pre>{}</pre>\n'.format(codeblock)
-    text = re.sub(r'pre-(sha1-[0-9a-f]+)', retrieve_match, text)
-    return text
-
-blockquote_re = re.compile(r"""
-    (
-        \n
-        (?:
-            (?:
-                >[ \t]
-                (?:.+?)
-            )
-            (?:\n{2,}|\Z)
-        )+
-    )
-""", re.S | re.X)
-def blockquote_sub(match):
-    """Substitutes <code> tags."""
-    quote = re.sub(r'(?<=\n)> ', '', match.group(1))
-    return '<blockquote>{0}</blockquote>'.format(quote)
 
 link_re = re.compile(r'(?<!\\)(!?)\[(.*?)\]\((.*?)\)', re.S)
 def link_sub(match):
@@ -226,9 +263,20 @@ def unhash_links(text, links):
     return text
 
 code_re = re.compile(r'(?<!\\)(?P<ticks>`+) ?(.*?) ?(?P=ticks)', re.S)
-def code_sub(match):
-    """Substitutes <code> tags."""
-    return '<code>{0}</code>'.format(cgi.escape(match.group(2)))
+def hash_codes(text):
+    codes = {}
+    print(code_re.findall(text)[0])
+    for _, code in code_re.findall(text):
+        codes[hash_text(code)] = code
+    text = code_re.sub(lambda m: 'code-' + hash_text(m.group(2)), text)
+    return text, codes
+
+def unhash_codes(text, codes):
+    def retrieve_match(match):
+        code = codes[match.group(1)]
+        return '<code>{0}</code>'.format(cgi.escape(code))
+    text = re.sub(r'code-(sha1-[0-9a-f]+)', retrieve_match, text)
+    return text
 
 emphasis_markers = r'\*{1,3}|_{1,3}'
 emphasis_re = re.compile(
