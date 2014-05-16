@@ -16,14 +16,13 @@ def process(text):
     text = hash_codeblocks(text, hashes)
     text = blockquote_re.sub(blockquote_sub, text)
     text = hash_code(text, hashes)
-    # links = hash_links(text)
-    # text, tags = hash_tags(text)
-    # text = link_re.sub(link_sub, text)
-    # text = emphasis_re.sub(emphasis_sub, text)
+    text = hash_links(text, hashes)
+    text = hash_tags(text, hashes)
+    text = emphasis_re.sub(emphasis_sub, text)
+    text = escape_re.sub(escapes_sub, text)
+    # text = paragraph_re.sub(paragraph_sub, text)
     # text = atx_header_re.sub(atx_header_sub, text)
     # text = setext_header_re.sub(setext_header_sub, text)
-    # text = escape_re.sub(escapes_sub, text)
-    # text = paragraph_re.sub(paragraph_sub, text)
     # text = unhash_links(text, links)
     # text = unhash_codes(text, codes)
     # text = unhash_tags(text, tags)
@@ -116,6 +115,29 @@ def hash_code(text, hashes):
         return hashed
     return code_re.sub(code_sub, text)
 
+link_re = re.compile(r'(?<!\\)(!?)\[(.*?)\]\((.*?)\)', re.S)
+def hash_links(text, hashes):
+    def link_sub(match):
+        is_img = match.group(1) != ''
+        content = match.group(2)
+        link = match.group(3)
+        if is_img:
+            result = '<img src="{0}" alt="{1}">'.format(link, content)
+        else:
+            result = '<a href="{0}">{1}</a>'.format(link, content)
+        hashed = hash_text(result, 'link')
+        hashes[hashed] = result
+        return hashed
+    return link_re.sub(link_sub, text)
+
+tag_re = re.compile(r"""<[\w\s:/'"=]+?>""", re.S)
+def hash_tags(text, hashes):
+    def tag_sub(match):
+        hashed = hash_text(match.group(0), 'tag')
+        hashes[hashed] = match.group(0)
+        return '\n' + hashed + '\n'
+    return tag_re.sub(tag_sub, text)
+
 def unhash_codeblocks(text, mappings):
     def retrieve_match(match):
         codeblock = mappings[match.group(1)]
@@ -123,6 +145,40 @@ def unhash_codeblocks(text, mappings):
         return '\n<pre>{}</pre>\n'.format(codeblock)
     text = re.sub(r'pre-(sha1-[0-9a-f]+)', retrieve_match, text)
     return text
+
+emphasis_markers = r'\*{1,3}|_{1,3}'
+emphasis_re = re.compile(
+        r'(?<!\\)(?P<emph>%s)(?!\s+)(.*?)(?P=emph)' % emphasis_markers,
+        re.S)
+def emphasis_sub(match):
+    """Substitutes <strong>, <em>, and <strong><em> tags."""
+    level = len(match.group(1))
+    content = match.group(2)
+    if level == 3:
+        return '<strong><em>{0}</em></strong>'.format(content)
+    elif level == 2:
+        return '<strong>{0}</strong>'.format(content)
+    elif level == 1:
+        return '<em>{0}</em>'.format(content)
+
+escape_re = re.compile(r"""\\(
+    \*  |
+    `   |
+    _   |
+    \{  |
+    \}  |
+    \[  |
+    \]  |
+    \(  |
+    \)  |
+    #   |
+    \+  |
+    -   |
+    \.  |
+    !
+)""", re.X)
+def escapes_sub(match):
+    return match.group(1)
 
 retab_re = re.compile(r'(.*?)\t', re.M)
 def retab_sub(match):
@@ -153,13 +209,6 @@ def store_vars(text):
     text = vars_re.sub('', text)
     return text, variables
 
-tag_re = re.compile(r'<[\w\s:/]+?>', re.S)
-def hash_tags(text):
-    tags = {}
-    for tag in tag_re.findall(text):
-        tags[hash_text(tag)] = tag
-    text = tag_re.sub(lambda m: 'tag-' + hash_text(m.group(0)), text)
-    return text, tags
 
 def unhash_tags(text, tags):
     def retrieve_match(match):
@@ -179,33 +228,6 @@ def paragraph_sub(match):
 
 
 
-link_re = re.compile(r'(?<!\\)(!?)\[(.*?)\]\((.*?)\)', re.S)
-def link_sub(match):
-    """Substitutes an <a> tag or an <img> tag.
-
-    The matching for links should be done only
-    after a dictionary of link hashes to actual links has been created,
-    because this function will substitute the hash of a link instead
-    of the link itself. This is so emphasis substitution of underscores
-    does not destroy links.
-    """
-    is_img = match.group(1) != ''
-    content = match.group(2)
-    link = 'link-' + hash_text(match.group(3))
-    if is_img:
-        return '<img src="{0}" alt="{1}">'.format(link, content)
-    return '<a href="{0}">{1}</a>'.format(link, content)
-
-def hash_links(text):
-    """Creates a mapping of link hashes to the links themselves.
-
-    RETURNS:
-    dict; mapping of link hashes to links
-    """
-    links = {}
-    for _, _, link in link_re.findall(text):
-        links[hash_text(link)] = link
-    return links
 
 def unhash_links(text, links):
     """Reverts link hashes in text back to the links themselves."""
@@ -222,20 +244,6 @@ def unhash_codes(text, codes):
     text = re.sub(r'code-(sha1-[0-9a-f]+)', retrieve_match, text)
     return text
 
-emphasis_markers = r'\*{1,3}|_{1,3}'
-emphasis_re = re.compile(
-        r'(?<!\\)(?P<emph>%s)(?!\s+)(.*?)(?P=emph)' % emphasis_markers,
-        re.S)
-def emphasis_sub(match):
-    """Substitutes <strong>, <em>, and <strong><em> tags."""
-    level = len(match.group(1))
-    content = match.group(2)
-    if level == 3:
-        return '<strong><em>{0}</em></strong>'.format(content)
-    elif level == 2:
-        return '<strong>{0}</strong>'.format(content)
-    elif level == 1:
-        return '<em>{0}</em>'.format(content)
 
 atx_header_re = re.compile(r'^(#{1,6})\s*(.*)$', re.M)
 def atx_header_sub(match):
@@ -251,24 +259,6 @@ def setext_header_sub(match):
     level = 1 if '=' in match.group(2) else 2
     return '<h{0}>{1}</h{0}>'.format(level, title)
 
-escape_re = re.compile(r"""\\(
-    \*  |
-    `   |
-    _   |
-    \{  |
-    \}  |
-    \[  |
-    \]  |
-    \(  |
-    \)  |
-    #   |
-    \+  |
-    -   |
-    \.  |
-    !
-)""", re.X)
-def escapes_sub(match):
-    return match.group(1)
 
 
 if __name__ == '__main__':
