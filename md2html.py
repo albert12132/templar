@@ -12,12 +12,11 @@ def process(text):
     text = handle_whitespace(text)
     text, variables = store_vars(text)
     hashes = {}
+    text = convert_lists(text, hashes)
     text = hash_codeblocks(text, hashes)
     text = blockquote_re.sub(blockquote_sub, text)
+    text = hash_code(text, hashes)
     # links = hash_links(text)
-    # text = convert_lists(text, True)
-    # text = convert_lists(text, False)
-    # text, codes = hash_codes(text)
     # text, tags = hash_tags(text)
     # text = link_re.sub(link_sub, text)
     # text = emphasis_re.sub(emphasis_sub, text)
@@ -31,6 +30,38 @@ def process(text):
     # text = unhash_codeblocks(text, mappings)
     return text
 
+def convert_lists(text, hashes):
+    for style, marker in (('u', '[+*-]'), ('o', r'\d+\.')):
+        list_re = re.compile(r"""
+            (
+                (?:
+                    (?:\n|\A)
+                    %s
+                    (?!\ %s\ )
+                    [ ]
+                    .+?
+                    (?=\Z|(?:\n%s\ )|(?=\n\n[^ \n]))
+                )+
+            )
+        """ % (marker, marker, marker), re.S | re.X)
+        for lst in list_re.findall(text):
+            items = re.split(r'(?:\n|\A)%s ' % marker, lst)[1:]
+            whole_list = ''
+            for item in items:
+                item = re.sub(r'^ {1,4}', '', item, flags=re.M)
+                item = convert_lists(item, hashes)
+                item = hash_codeblocks(item, hashes)
+                item = blockquote_re.sub(blockquote_sub, item)
+                # TODO paragraphs
+                whole_list += '<li>{}</li>\n'.format(item)
+            whole_list = '<{0}l>\n{1}</{0}l>\n\n'.format(style, whole_list)
+            hashed = hash_text(whole_list, 'list')
+            hashes[hashed] = whole_list
+            start = text.index(lst)
+            end = start + len(lst)
+            text = text[:start] + '\n' + hashed + text[end:]
+    return text
+
 codeblock_re = re.compile(r"""
     (
         (?:(?<=\n)|(?<=\A))
@@ -41,7 +72,7 @@ codeblock_re = re.compile(r"""
             (?:
                 [ ]{4}.+?\n
             )
-        )+
+        )*
         (?=\n*(?![ ]{4}))
     )
 """, re.S | re.X)
@@ -49,6 +80,7 @@ def hash_codeblocks(text, hashes):
     def codeblock_sub(match):
         block = match.group(1).rstrip('\n')
         block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
+        block = '<pre><code>{}</code></pre>'.format(block)
         hashed = hash_text(block, 'pre')
         hashes[hashed] = block
         return hashed + '\n\n'
@@ -66,7 +98,7 @@ blockquote_re = re.compile(r"""
             )
            |
             \n
-        )+
+        )*
         (?=\n*(?!>))
     )
 """, re.S | re.X)
@@ -74,6 +106,15 @@ def blockquote_sub(match):
     block = match.group(1).rstrip('\n')
     block = re.sub(r'(?:(?<=\n)|(?<=\A))> ?', '', block)
     return '<blockquote>\n{}\n</blockquote>\n\n'.format(block)
+
+code_re = re.compile(r'(?<!\\)(?P<ticks>`+) ?(.*?) ?(?P=ticks)', re.S)
+def hash_code(text, hashes):
+    def code_sub(match):
+        code = '<code>{}</code>'.format(cgi.escape(match.group(1)))
+        hashed = hash_text(code, 'code')
+        hashes[hashed] = code
+        return hashed
+    return code_re.sub(code_sub, text)
 
 def unhash_codeblocks(text, mappings):
     def retrieve_match(match):
@@ -135,95 +176,6 @@ paragraph_re = re.compile(r"""
 def paragraph_sub(match):
     return '<p>{}</p>'.format(match.group(1))
 
-ulist_re = re.compile(r"""
-(
-    (?<=\n)
-    (?:
-        (?P<space>[ \t]*)
-        (?P<marker>[*+-])
-        (?!\ (?P=marker)\ )
-        [\t ]+
-        (?:.+?)
-        (?:
-            \Z
-           |
-            \n
-            (?=
-                [ \t]*[*+-][ \t]+
-            )
-            (?!
-                (?P=space)[ \t]+[*+-][ \t]+
-            )
-           |
-            \n\n+
-            (?=\S)
-        )
-    )+
-)
-""", re.S | re.X)
-
-olist_re = re.compile(r"""
-(
-    (?<=\n)
-    (?:
-        (?P<space>[ \t]*)
-        \d+\.
-        [\t ]+
-        (?:.+?)
-        (?:
-            \Z
-           |
-            \n
-            (?=
-                [ \t]*\d+\.[ \t]+
-            )
-            (?!
-                (?P=space)[ \t]+\d+\.[ \t]+
-            )
-           |
-            \n\n+
-            (?=\S)
-        )
-    )+
-)
-""", re.S | re.X)
-
-def convert_lists(text, is_ulist):
-    pos = 0
-    list_re = ulist_re if is_ulist else olist_re
-    tag = 'ul' if is_ulist else 'ol'
-    marker = '[+*-]' if is_ulist else '\d+\.'
-    while True:
-        match = list_re.search(text, pos)
-        if not match:
-            break
-        first_list = match.group(1)
-        start = len(re.match(r'[ \t]*', first_list).group(0))
-        whole_list = re.split(r'\n(?= {%d}%s )' % (start, marker),
-                              '\n' + first_list)[1:]
-        items = []
-        def truncate(match):
-            space = len(match.group(1))
-            if space % 4 == 0:
-                return ' '*(space - 4)
-            return ' '*(space - space%4)
-
-        for item in whole_list:
-            item = re.sub(marker, lambda m: ' '*len(m.group(0)), item, 1)
-            item = convert_lists(item, is_ulist)
-            item = re.sub(r'(?:(?<=\n)|\A)( *)', truncate, item)
-            items.append(
-                    ' '*start + '<li>\n' +
-                    item + \
-                    '\n' + ' '*start + '</li>\n')
-        list_str = (' '*start) + '<{}>\n'.format(tag) + \
-                   '\n'.join(items) + \
-                   ' '*start + '</{}>\n'.format(tag)
-        start = text.index(first_list)
-        end = start + len(first_list)
-        text = text[:start] + list_str + text[end:]
-        pos = end
-    return text
 
 
 
@@ -262,14 +214,6 @@ def unhash_links(text, links):
     text = re.sub(r'link-(sha1-[0-9a-f]+)', retrieve_link, text)
     return text
 
-code_re = re.compile(r'(?<!\\)(?P<ticks>`+) ?(.*?) ?(?P=ticks)', re.S)
-def hash_codes(text):
-    codes = {}
-    print(code_re.findall(text)[0])
-    for _, code in code_re.findall(text):
-        codes[hash_text(code)] = code
-    text = code_re.sub(lambda m: 'code-' + hash_text(m.group(2)), text)
-    return text, codes
 
 def unhash_codes(text, codes):
     def retrieve_match(match):
