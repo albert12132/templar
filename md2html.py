@@ -8,12 +8,13 @@ def hash_text(s):
     return 'sha1-' + sha1(SALT + s.encode("utf-8")).hexdigest()
 
 def process(text):
-    variables = store_vars(text)
     text = handle_whitespace(text)
+    text, variables = store_vars(text)
     links = hash_links(text)
     text = convert_lists(text, True)
     text = convert_lists(text, False)
     text, mappings = hash_codeblocks(text)
+    text = blockquote_re.sub(blockquote_sub, text)
     text = link_re.sub(link_sub, text)
     text = code_re.sub(code_sub, text)
     text = emphasis_re.sub(emphasis_sub, text)
@@ -50,7 +51,9 @@ def store_vars(text):
     RETURNS:
     dict; variable to value mappings
     """
-    return {var: value for var, value in vars_re.findall(text)}
+    variables = {var: value for var, value in vars_re.findall(text)}
+    text = vars_re.sub('', text)
+    return text, variables
 
 ulist_re = re.compile(r"""
 (
@@ -160,7 +163,6 @@ def hash_codeblocks(text):
     for codeblock in codeblock_re.findall(text):
         mappings[hash_text(codeblock)] = codeblock
     text = codeblock_re.sub(lambda m: 'pre-' + hash_text(m.group(0)), text)
-    print(text)
     return text, mappings
 
 def unhash_codeblocks(text, mappings):
@@ -171,6 +173,22 @@ def unhash_codeblocks(text, mappings):
     text = re.sub(r'pre-(sha1-[0-9a-f]+)', retrieve_match, text)
     return text
 
+blockquote_re = re.compile(r"""
+    (
+        \n
+        (?:
+            (?:
+                >[ \t]
+                (?:.+?)
+            )
+            (?:\n{2,}|\Z)
+        )+
+    )
+""", re.S | re.X)
+def blockquote_sub(match):
+    """Substitutes <code> tags."""
+    quote = re.sub(r'(?<=\n)> ', '', match.group(1))
+    return '<blockquote>{0}</blockquote>'.format(quote)
 
 link_re = re.compile(r'(?<!\\)(!?)\[(.*?)\]\((.*?)\)', re.S)
 def link_sub(match):
