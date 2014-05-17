@@ -26,6 +26,35 @@ def process(text):
     text = unhash(text, hashes)
     return text
 
+retab_re = re.compile(r'(.*?)\t', re.M)
+def retab_sub(match):
+    before = match.group(1)
+    return before + (' ' * (TAB_SIZE - len(before) % TAB_SIZE))
+whitespace_re = re.compile(r'^\s+$', re.M)
+def handle_whitespace(text):
+    text = retab_re.sub(retab_sub, text)
+    text = whitespace_re.sub('', text)
+    return text
+
+vars_re = re.compile('^~\s*(.*?):\s*(.*)$', re.M)
+def store_vars(text):
+    """Extracts variables that can be used in templating engines.
+
+    Each variable is defined on a single line in the following way:
+
+        ~ var: text
+
+    The ~ must be at the start of a newline. var can be any sequence of
+    characters that does not contain a ":". Likewise, text can be any
+    sequence of characters.
+
+    RETURNS:
+    dict; variable to value mappings
+    """
+    variables = {var: value for var, value in vars_re.findall(text)}
+    text = vars_re.sub('', text)
+    return text, variables
+
 def convert_lists(text, hashes):
     for style, marker in (('u', '[+*-]'), ('o', r'\d+\.')):
         list_re = re.compile(r"""
@@ -48,7 +77,7 @@ def convert_lists(text, hashes):
                 item = convert_lists(item, hashes)
                 item = hash_codeblocks(item, hashes)
                 item = blockquote_re.sub(blockquote_sub, item)
-                # TODO paragraphs
+                item = paragraph_re.sub(paragraph_sub, item)
                 whole_list += '<li>{}</li>\n'.format(item)
             whole_list = '<{0}l>\n{1}</{0}l>\n\n'.format(style, whole_list)
             hashed = hash_text(whole_list, 'list')
@@ -196,47 +225,13 @@ paragraph_re = re.compile(r"""
 def paragraph_sub(match):
     return '<p>{}</p>'.format(match.group(0))
 
-hash_re = re.compile("(?:link|tag|list|pre)-[\da-f]+")
+hash_re = re.compile("(?:code|link|tag|list|pre)-[\da-f]+")
 def unhash(text, hashes):
     def retrieve_match(match):
         return hashes[match.group(0)]
     while hash_re.search(text):
         text = hash_re.sub(retrieve_match, text)
     return text
-
-
-retab_re = re.compile(r'(.*?)\t', re.M)
-def retab_sub(match):
-    before = match.group(1)
-    return before + (' ' * (TAB_SIZE - len(before) % TAB_SIZE))
-whitespace_re = re.compile(r'^\s+$', re.M)
-def handle_whitespace(text):
-    text = retab_re.sub(retab_sub, text)
-    text = whitespace_re.sub('', text)
-    return text
-
-vars_re = re.compile('^~\s*(.*?):\s*(.*)$', re.M)
-def store_vars(text):
-    """Extracts variables that can be used in templating engines.
-
-    Each variable is defined on a single line in the following way:
-
-        ~ var: text
-
-    The ~ must be at the start of a newline. var can be any sequence of
-    characters that does not contain a ":". Likewise, text can be any
-    sequence of characters.
-
-    RETURNS:
-    dict; variable to value mappings
-    """
-    variables = {var: value for var, value in vars_re.findall(text)}
-    text = vars_re.sub('', text)
-    return text, variables
-
-
-
-
 
 if __name__ == '__main__':
     import sys
