@@ -8,7 +8,7 @@ SALT = bytes(randint(0, 1000000))
 def hash_text(s, label):
     return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest()
 
-def process(text):
+def convert(text):
     text = handle_whitespace(text)
     text, variables = store_vars(text)
     hashes = {}
@@ -24,7 +24,7 @@ def process(text):
     text = setext_header_re.sub(setext_header_sub, text)
     text = paragraph_re.sub(paragraph_sub, text)
     text = unhash(text, hashes)
-    return text
+    return text, variables
 
 retab_re = re.compile(r'(.*?)\t', re.M)
 def retab_sub(match):
@@ -205,7 +205,7 @@ def atx_header_sub(match):
     title = match.group(2)
     return '<h{0}>{1}</h{0}>'.format(level, title)
 
-setext_header_re = re.compile(r'(?<=\n)(.*?)\n(=+|-+)')
+setext_header_re = re.compile(r'(?:(?<=\n)|(?<=\A))(.*?)\n(=+|-+)')
 def setext_header_sub(match):
     """Substitutes setext headers (defined with underscores)."""
     title = match.group(1)
@@ -236,4 +236,4 @@ def unhash(text, hashes):
 if __name__ == '__main__':
     import sys
     with open(sys.argv[1], 'r') as f:
-        print(process(f.read()))
+        print(convert(f.read())[0])
