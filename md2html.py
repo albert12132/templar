@@ -20,13 +20,10 @@ def process(text):
     text = hash_tags(text, hashes)
     text = emphasis_re.sub(emphasis_sub, text)
     text = escape_re.sub(escapes_sub, text)
-    # text = paragraph_re.sub(paragraph_sub, text)
-    # text = atx_header_re.sub(atx_header_sub, text)
-    # text = setext_header_re.sub(setext_header_sub, text)
-    # text = unhash_links(text, links)
-    # text = unhash_codes(text, codes)
-    # text = unhash_tags(text, tags)
-    # text = unhash_codeblocks(text, mappings)
+    text = atx_header_re.sub(atx_header_sub, text)
+    text = setext_header_re.sub(setext_header_sub, text)
+    text = paragraph_re.sub(paragraph_sub, text)
+    text = unhash(text, hashes)
     return text
 
 def convert_lists(text, hashes):
@@ -138,14 +135,6 @@ def hash_tags(text, hashes):
         return '\n' + hashed + '\n'
     return tag_re.sub(tag_sub, text)
 
-def unhash_codeblocks(text, mappings):
-    def retrieve_match(match):
-        codeblock = mappings[match.group(1)]
-        codeblock = re.sub(r'(?<=\n) {4}', '', codeblock, re.S).lstrip('\n')
-        return '\n<pre>{}</pre>\n'.format(codeblock)
-    text = re.sub(r'pre-(sha1-[0-9a-f]+)', retrieve_match, text)
-    return text
-
 emphasis_markers = r'\*{1,3}|_{1,3}'
 emphasis_re = re.compile(
         r'(?<!\\)(?P<emph>%s)(?!\s+)(.*?)(?P=emph)' % emphasis_markers,
@@ -180,6 +169,42 @@ escape_re = re.compile(r"""\\(
 def escapes_sub(match):
     return match.group(1)
 
+atx_header_re = re.compile(r'^(#{1,6})\s*(.*)$', re.M)
+def atx_header_sub(match):
+    """Substitutes atx headers (headers defined using #'s)."""
+    level = len(match.group(1))
+    title = match.group(2)
+    return '<h{0}>{1}</h{0}>'.format(level, title)
+
+setext_header_re = re.compile(r'(?<=\n)(.*?)\n(=+|-+)')
+def setext_header_sub(match):
+    """Substitutes setext headers (defined with underscores)."""
+    title = match.group(1)
+    level = 1 if '=' in match.group(2) else 2
+    return '<h{0}>{1}</h{0}>'.format(level, title)
+
+avoids = """
+    (?:(?:tag|pre|list)-[\da-f]+)|<h(?P<level>[1-6])>.*?</h(?P=level)>
+"""
+paragraph_re = re.compile(r"""
+    (?<=\n\n)
+    (?!\n)
+    (?!%s)
+    (.+?)
+    (?=\n\n)
+""" % avoids, re.S | re.X)
+def paragraph_sub(match):
+    return '<p>{}</p>'.format(match.group(0))
+
+hash_re = re.compile("(?:link|tag|list|pre)-[\da-f]+")
+def unhash(text, hashes):
+    def retrieve_match(match):
+        return hashes[match.group(0)]
+    while hash_re.search(text):
+        text = hash_re.sub(retrieve_match, text)
+    return text
+
+
 retab_re = re.compile(r'(.*?)\t', re.M)
 def retab_sub(match):
     before = match.group(1)
@@ -210,54 +235,6 @@ def store_vars(text):
     return text, variables
 
 
-def unhash_tags(text, tags):
-    def retrieve_match(match):
-        return tags[match.group(1)]
-    text = re.sub(r'tag-(sha1-[0-9a-f]+)', retrieve_match, text)
-    return text
-
-paragraph_re = re.compile(r"""
-    (?<=\n\n)
-    (?!<(?:ul|ol|li|pre|h\d)>)
-    (.+?)
-    (?=\n{2,})
-""", re.S | re.X)
-def paragraph_sub(match):
-    return '<p>{}</p>'.format(match.group(1))
-
-
-
-
-
-def unhash_links(text, links):
-    """Reverts link hashes in text back to the links themselves."""
-    def retrieve_link(match):
-        return links[match.group(1)]
-    text = re.sub(r'link-(sha1-[0-9a-f]+)', retrieve_link, text)
-    return text
-
-
-def unhash_codes(text, codes):
-    def retrieve_match(match):
-        code = codes[match.group(1)]
-        return '<code>{0}</code>'.format(cgi.escape(code))
-    text = re.sub(r'code-(sha1-[0-9a-f]+)', retrieve_match, text)
-    return text
-
-
-atx_header_re = re.compile(r'^(#{1,6})\s*(.*)$', re.M)
-def atx_header_sub(match):
-    """Substitutes atx headers (headers defined using #'s)."""
-    level = len(match.group(1))
-    title = match.group(2)
-    return '<h{0}>{1}</h{0}>'.format(level, title)
-
-setext_header_re = re.compile(r'(?<=\n)(.*?)\n(=+|-+)')
-def setext_header_sub(match):
-    """Substitutes setext headers (defined with underscores)."""
-    title = match.group(1)
-    level = 1 if '=' in match.group(2) else 2
-    return '<h{0}>{1}</h{0}>'.format(level, title)
 
 
 
