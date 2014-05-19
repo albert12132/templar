@@ -26,7 +26,7 @@ sub_tag_re = re.compile('\{%\s*(.+?)\s*%\}')
 
 expr_re = re.compile('\{{2}\s*(.+?)\s*\}{2}')
 
-TEMPLATE_DIRS = ['.']
+TEMPLATE_DIRS = ['.'] # TODO
 
 #####################
 # TEMPLATE RERIEVAL #
@@ -209,6 +209,9 @@ def compile(templates, attrs, dest):
             val = attrs[tag]
             template = re.sub('\{\{\s.+?\s\}\}', str(val), template,
                               count=1)
+    if not dest:
+        print(template)
+        return
     with open(dest, 'w') as f:
         f.write(template)
         print('Finished compiliing')
@@ -225,8 +228,6 @@ def parse_content(content):
     PARAMETERS:
     content -- the name of a Markdown file
     """
-    # if os.getcwd() != BASE_PATH:
-    #     content = os.path.join(os.path.split(os.getcwd())[1], content)
     return link.link(content)[1]
 
 
@@ -238,12 +239,13 @@ def main():
     parser.add_argument('-c', '--config', type=str,
                         default='config.py',
                         help="Path to a config file.")
-    parser.add_argument('dest', help='The destination directory')
+    parser.add_argument('-d', '--destination', type=str, default=None,
+                        help='The destination filepath')
     args = parser.parse_args()
 
     templates = get_all_templates(args.template, [])
     tag_names = parse_content(args.content)
-    compile(templates, tag_names, args.dest)
+    compile(templates, tag_names, args.destination)
 
 if __name__ == '__main__':
     main()
