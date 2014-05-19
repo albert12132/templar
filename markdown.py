@@ -9,8 +9,8 @@ def hash_text(s, label):
     return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest()
 
 def convert(text):
-    text = handle_whitespace(text)
     text, variables = store_vars(text)
+    text = handle_whitespace(text)
     hashes = {}
     text = convert_lists(text, hashes)
     text = hash_codeblocks(text, hashes)
@@ -33,10 +33,10 @@ def retab_sub(match):
 whitespace_re = re.compile(r'^\s+$', re.M)
 def handle_whitespace(text):
     text = retab_re.sub(retab_sub, text)
-    text = whitespace_re.sub('', text)
+    text = whitespace_re.sub('', text).strip()
     return text
 
-vars_re = re.compile('^~\s*(.*?):\s*(.*)$', re.M)
+vars_re = re.compile('^~\s*(.*?):\s*(.*?)\n', re.M | re.S)
 def store_vars(text):
     """Extracts variables that can be used in templating engines.
 
@@ -59,27 +59,27 @@ def convert_lists(text, hashes):
     for style, marker in (('u', '[+*-]'), ('o', r'\d+\.')):
         list_re = re.compile(r"""
             (
+                (?:(?<=\n)|(?<=\A))
                 (?:
-                    (?:\n|\A)
+                    (?:\n*)
                     %s
                     (?!\ %s\ )
                     [ ]
                     .+?
-                    (?=\Z|(?:\n%s\ )|(?=\n\n[^ \n]))
                 )+
+                (?=\Z|\n{2,}[^ \n])
             )
-        """ % (marker, marker, marker), re.S | re.X)
+        """ % (marker, marker), re.S | re.X)
         for lst in list_re.findall(text):
             items = re.split(r'(?:\n|\A)%s ' % marker, lst)[1:]
             whole_list = ''
             for item in items:
                 item = re.sub(r'^ {1,4}', '', item, flags=re.M)
-                item = convert_lists(item, hashes)
-                item = hash_codeblocks(item, hashes)
-                item = blockquote_re.sub(blockquote_sub, item)
-                item = paragraph_re.sub(paragraph_sub, item)
+                item = convert(item)[0]
                 whole_list += '<li>{}</li>\n'.format(item)
-            whole_list = '<{0}l>\n{1}</{0}l>\n\n'.format(style, whole_list)
+            whole_list = '<{0}l>\n{1}\n</{0}l>\n\n'.format(
+                    style,
+                    re.sub('^', '  ', whole_list.strip(), flags=re.M))
             hashed = hash_text(whole_list, 'list')
             hashes[hashed] = whole_list
             start = text.index(lst)
@@ -105,6 +105,7 @@ def hash_codeblocks(text, hashes):
     def codeblock_sub(match):
         block = match.group(1).rstrip('\n')
         block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
+        block = cgi.escape(block)
         block = '<pre><code>{}</code></pre>'.format(block)
         hashed = hash_text(block, 'pre')
         hashes[hashed] = block
