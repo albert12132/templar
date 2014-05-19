@@ -13,7 +13,7 @@ import argparse
 import os
 import link
 
-from config import TEMPLATE_DIRS, BASE_PATH, CONFIGS
+from config import TEMPLATE_DIRS, BASE_PATH, CONFIGS, CONTROLLERS
 
 ##################
 # REGEX PATTERNS #
@@ -232,7 +232,7 @@ def parse_content(content):
     """
     if not content:
         return {}
-    return link.link(content)[1]
+    return link.link(content, CONTROLLERS)[1]
 
 
 def main():
