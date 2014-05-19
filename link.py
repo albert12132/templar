@@ -1,5 +1,4 @@
 import re
-import controller
 from markdown import convert
 import importlib
 
