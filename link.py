@@ -1,9 +1,6 @@
-# link markdown
-# convert markdown
-# apply postprocessing (for special tags)
-# create dictionary with variable and block mappings
-
 import re
+import controller
+from markdown import convert
 
 include_re = re.compile(r'<\s*include\s+(.+?)(?::(.+?))?\s*>')
 block_re = re.compile(r"""
@@ -30,6 +27,7 @@ def cache_blocks(filename, text, cache):
             contents = cache_blocks(filename, contents, cache)
             cache[filename + ':' + name] = contents
         text = block_re.sub(lambda m: m.group(1), text)
+    text = apply_controller(text)
     return text
 
 def retrieve_and_link(filename, cache):
@@ -37,9 +35,24 @@ def retrieve_and_link(filename, cache):
         text = f.read()
     text = include_re.sub(make_link_sub(cache), text)
     text = cache_blocks(filename, text, cache)
+    return text, cache
+
+def apply_controller(text):
+    for regex, sub in controller.regexes:
+        text = regex.sub(sub, text)
     return text
+
+def link(filename):
+    text, cache = retrieve_and_link(filename, {})
+    text, variables = convert(text)
+    for k, v in variables.items():
+        cache[k] = v
+    return text, cache
 
 if __name__ == '__main__':
     import sys
-    print(retrieve_and_link(sys.argv[1], {}))
+    text, cache = link(sys.argv[1])
+    print(text)
+    print(cache)
+
 

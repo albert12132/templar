@@ -11,6 +11,7 @@
 import re
 import argparse
 import os
+import link
 
 ##################
 # REGEX PATTERNS #
@@ -25,6 +26,7 @@ sub_tag_re = re.compile('\{%\s*(.+?)\s*%\}')
 
 expr_re = re.compile('\{{2}\s*(.+?)\s*\}{2}')
 
+TEMPLATE_DIRS = ['.']
 
 #####################
 # TEMPLATE RERIEVAL #
@@ -89,7 +91,7 @@ def get_all_templates(filename, templates):
     Exits with status 1 if improper inheritance syntax is encountered.
     """
     contents = get_template(filename)
-    match = extend_tag_re.match(extends)
+    match = extend_tag_re.match(contents)
     if match:
         contents = contents[len(match.group(0)):]
         parent = match.group(1)
@@ -198,12 +200,13 @@ def compile(templates, attrs, dest):
     # process template inheritance first
     templates.reverse()
     template = compile_inheritance(templates)
-    for config in CONFIGS:
-        attrs[config] = CONFIGS[config]
+    # for config in CONFIGS:
+    #     attrs[config] = CONFIGS[config]
 
     while expr_re.search(template):
         for tag in expr_re.findall(template):
-            val = eval(tag, attrs)
+            # val = eval(tag, attrs)
+            val = attrs[tag]
             template = re.sub('\{\{\s.+?\s\}\}', str(val), template,
                               count=1)
     with open(dest, 'w') as f:
@@ -217,29 +220,24 @@ def compile(templates, attrs, dest):
 
 
 def parse_content(content):
-    """Retrieves variable bindings from CONTENT. If CONTENT is None,
-    return an empty dictionary (no variable bindings).
+    """Retrieves variable bindings from CONTENT.
 
     PARAMETERS:
-    content -- the name of a Python module or an empty string.
+    content -- the name of a Markdown file
     """
-    if not content:
-        return {}
-    if content.endswith('.py'):
-        content = content[:-3]
-    if os.getcwd() != BASE_PATH:
-        content = os.path.join(os.path.split(os.getcwd())[1], content)
-    content = content.split('/')
-    content = '.'.join(content)
-    bindings = __import__(content, fromlist=['attrs'])
-    return bindings.attrs
+    # if os.getcwd() != BASE_PATH:
+    #     content = os.path.join(os.path.split(os.getcwd())[1], content)
+    return link.link(content)[1]
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('template', help="The template's filename")
-    parser.add_argument('-c', '--content', type=str, default='',
-                        help="A Python file with controller logic.")
+    parser.add_argument('content',
+                        help="A Markdown file with content.")
+    parser.add_argument('-c', '--config', type=str,
+                        default='config.py',
+                        help="Path to a config file.")
     parser.add_argument('dest', help='The destination directory')
     args = parser.parse_args()
 
