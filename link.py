@@ -47,8 +47,8 @@ def link(filename, controllers):
     text, variables = convert(text)
     for k, v in variables.items():
         cache[k] = v
-        for mod in controllers:
-            controller = importlib.import_module(mod)
+    for mod in controllers:
+        controller = importlib.import_module(mod)
         text = apply_controller(text, controller)
         for k, v in controller.configs.items():
             cache[k] = v

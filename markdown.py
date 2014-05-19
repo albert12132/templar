@@ -241,7 +241,7 @@ def unhash(text, hashes):
         return hashes[match.group(0)]
     while hash_re.search(text):
         text = hash_re.sub(retrieve_match, text)
-    text = pre_re.sub(lambda m: m.group(0).replace(m.group(1), ''), text)
+    text = pre_re.sub(lambda m: re.sub('^' + m.group(1), '', m.group(0), flags=re.M), text)
     return text
 
 if __name__ == '__main__':

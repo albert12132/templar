@@ -13,6 +13,8 @@ import argparse
 import os
 import link
 
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from config import TEMPLATE_DIRS, BASE_PATH, CONFIGS, CONTROLLERS
 
 ##################
