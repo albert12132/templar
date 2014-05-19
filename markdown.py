@@ -76,29 +76,32 @@ def convert_lists(text, hashes):
             for item in items:
                 item = re.sub(r'^ {1,4}', '', item, flags=re.M)
                 item = convert(item)[0]
+                match = re.match('<p>(.*?)</p>', item)
+                if match and match.group(0) == item.strip():
+                    item = match.group(1)
                 whole_list += '<li>{}</li>\n'.format(item)
-            whole_list = '<{0}l>\n{1}\n</{0}l>\n\n'.format(
+            whole_list = '\n<{0}l>\n{1}\n</{0}l>'.format(
                     style,
                     re.sub('^', '  ', whole_list.strip(), flags=re.M))
             hashed = hash_text(whole_list, 'list')
             hashes[hashed] = whole_list
             start = text.index(lst)
             end = start + len(lst)
-            text = text[:start] + '\n' + hashed + text[end:]
+            text = text[:start] + hashed + text[end:]
     return text
 
 codeblock_re = re.compile(r"""
     (
         (?:(?<=\n)|(?<=\A))
-        [ ]{4}.+?\n
+        [ ]{4}.+?(?:\n|\Z)
         (?:
             \n
            |
             (?:
-                [ ]{4}.+?\n
+                [ ]{4}.+?(?:\n|\Z)
             )
         )*
-        (?=\n*(?![ ]{4}))
+        (?=(?:\n*(?![ ]{4}))|\Z)
     )
 """, re.S | re.X)
 def hash_codeblocks(text, hashes):
@@ -162,7 +165,7 @@ def hash_tags(text, hashes):
     def tag_sub(match):
         hashed = hash_text(match.group(0), 'tag')
         hashes[hashed] = match.group(0)
-        return '\n' + hashed + '\n'
+        return hashed
     return tag_re.sub(tag_sub, text)
 
 emphasis_markers = r'\*{1,3}|_{1,3}'
@@ -226,15 +229,23 @@ paragraph_re = re.compile(r"""
 def paragraph_sub(match):
     return '<p>{}</p>'.format(match.group(0))
 
-hash_re = re.compile("(?:code|link|tag|list|pre)-[\da-f]+")
+hash_re = re.compile(r"(?:code|link|tag|list|pre)-[\da-f]+")
+pre_re = re.compile(r"""
+    (?P<space>[ ]*)
+    <pre>
+    .*?
+    </pre>
+""", re.S | re.X)
 def unhash(text, hashes):
     def retrieve_match(match):
         return hashes[match.group(0)]
     while hash_re.search(text):
         text = hash_re.sub(retrieve_match, text)
+    text = pre_re.sub(lambda m: m.group(0).replace(m.group(1), ''), text)
     return text
 
 if __name__ == '__main__':
     import sys
     with open(sys.argv[1], 'r') as f:
         print(convert(f.read())[0])
+        # convert(f.read())[0]
