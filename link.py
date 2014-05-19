@@ -21,13 +21,16 @@ def make_link_sub(cache):
 
 def cache_blocks(filename, text, cache):
     filename = filename.replace('.md', '')
-    cache[filename + ':all'] = text
     while block_re.search(text):
         for name, contents in block_re.findall(text):
             contents = cache_blocks(filename, contents, cache)
-            cache[filename + ':' + name] = contents
+            cache[filename + ':' + name] = convert(contents)[0]
         text = block_re.sub(lambda m: m.group(1), text)
+    text, variables = convert(text)
     text = apply_controller(text)
+    for k, v in variables.items():
+        cache[k] = v
+    cache[filename + ':all'] = text
     return text
 
 def retrieve_and_link(filename, cache):
@@ -44,9 +47,6 @@ def apply_controller(text):
 
 def link(filename):
     text, cache = retrieve_and_link(filename, {})
-    text, variables = convert(text)
-    for k, v in variables.items():
-        cache[k] = v
     return text, cache
 
 if __name__ == '__main__':
