@@ -135,7 +135,7 @@ def blockquote_sub(match):
 code_re = re.compile(r'(?<!\\)(?P<ticks>`+) ?(.*?) ?(?P=ticks)', re.S)
 def hash_code(text, hashes):
     def code_sub(match):
-        code = '<code>{}</code>'.format(cgi.escape(match.group(1)))
+        code = '<code>{}</code>'.format(cgi.escape(match.group(2)))
         hashed = hash_text(code, 'code')
         hashes[hashed] = code
         return hashed
@@ -216,11 +216,11 @@ avoids = """
     (?:(?:tag|pre|list)-[\da-f]+)|<h(?P<level>[1-6])>.*?</h(?P=level)>
 """
 paragraph_re = re.compile(r"""
-    (?<=\n\n)
+    (?:(?<=\n\n)|(?<=\A))
     (?!\n)
     (?!%s)
     (.+?)
-    (?=\n\n)
+    (?:(?=\n\n)|(?=\n*\Z))
 """ % avoids, re.S | re.X)
 def paragraph_sub(match):
     return '<p>{}</p>'.format(match.group(0))
