@@ -13,6 +13,8 @@ import argparse
 import os
 import link
 
+from config import TEMPLATE_DIRS, BASE_PATH, CONFIGS
+
 ##################
 # REGEX PATTERNS #
 ##################
@@ -25,8 +27,6 @@ super_close_re = re.compile(r'<%/\s*(.+?)\s*%>')
 sub_tag_re = re.compile('\{%\s*(.+?)\s*%\}')
 
 expr_re = re.compile('\{{2}\s*(.+?)\s*\}{2}')
-
-TEMPLATE_DIRS = ['.'] # TODO
 
 #####################
 # TEMPLATE RERIEVAL #
@@ -200,13 +200,15 @@ def compile(templates, attrs, dest):
     # process template inheritance first
     templates.reverse()
     template = compile_inheritance(templates)
-    # for config in CONFIGS:
-    #     attrs[config] = CONFIGS[config]
+    for k, v in CONFIGS.items():
+        attrs[k] = v
 
     while expr_re.search(template):
         for tag in expr_re.findall(template):
-            # val = eval(tag, attrs)
-            val = attrs[tag]
+            if tag in attrs:
+                val = attrs[tag]
+            else:
+                val = eval(tag, attrs)
             template = re.sub('\{\{\s.+?\s\}\}', str(val), template,
                               count=1)
     if not dest:
@@ -214,7 +216,7 @@ def compile(templates, attrs, dest):
         return
     with open(dest, 'w') as f:
         f.write(template)
-        print('Finished compiliing')
+        print('Finished compiling')
         print('Result can be found at ' + dest)
 
 ##########################
@@ -228,23 +230,22 @@ def parse_content(content):
     PARAMETERS:
     content -- the name of a Markdown file
     """
+    if not content:
+        return {}
     return link.link(content)[1]
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('template', help="The template's filename")
-    parser.add_argument('content',
+    parser.add_argument('-s', '--source', type=str, default=None,
                         help="A Markdown file with content.")
-    parser.add_argument('-c', '--config', type=str,
-                        default='config.py',
-                        help="Path to a config file.")
     parser.add_argument('-d', '--destination', type=str, default=None,
                         help='The destination filepath')
     args = parser.parse_args()
 
     templates = get_all_templates(args.template, [])
-    tag_names = parse_content(args.content)
+    tag_names = parse_content(args.source)
     compile(templates, tag_names, args.destination)
 
 if __name__ == '__main__':

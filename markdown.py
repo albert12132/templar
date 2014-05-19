@@ -76,7 +76,7 @@ def convert_lists(text, hashes):
             for item in items:
                 item = re.sub(r'^ {1,4}', '', item, flags=re.M)
                 item = convert(item)[0]
-                match = re.match('<p>(.*?)</p>', item)
+                match = re.match('<p>(.*?)</p>', item, flags=re.S)
                 if match and match.group(0) == item.strip():
                     item = match.group(1)
                 whole_list += '<li>{}</li>\n'.format(item)
