@@ -210,7 +210,10 @@ def compile(templates, attrs, dest):
             if tag in attrs:
                 val = attrs[tag]
             else:
-                val = eval(tag, attrs)
+                try:
+                    val = eval(tag, attrs)
+                except:
+                    val = ''
             template = re.sub('\{\{\s.+?\s\}\}', str(val), template,
                               count=1)
     if not dest:
