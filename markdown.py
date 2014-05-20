@@ -1,7 +1,7 @@
 import re
 from random import randint
 from hashlib import sha1
-import cgi
+import html
 
 TAB_SIZE = 4
 SALT = bytes(randint(0, 1000000))
@@ -108,7 +108,7 @@ def hash_codeblocks(text, hashes):
     def codeblock_sub(match):
         block = match.group(1).rstrip('\n')
         block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
-        block = cgi.escape(block)
+        block = html.escape(block)
         block = '<pre><code>{}</code></pre>'.format(block)
         hashed = hash_text(block, 'pre')
         hashes[hashed] = block
@@ -139,7 +139,7 @@ def blockquote_sub(match):
 code_re = re.compile(r'(?<!\\)(?P<ticks>`+) ?(.*?) ?(?P=ticks)', re.S)
 def hash_code(text, hashes):
     def code_sub(match):
-        code = '<code>{}</code>'.format(cgi.escape(match.group(2)))
+        code = '<code>{}</code>'.format(html.escape(match.group(2)))
         hashed = hash_text(code, 'code')
         hashes[hashed] = code
         return hashed
