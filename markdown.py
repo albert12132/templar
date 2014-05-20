@@ -209,7 +209,7 @@ def atx_header_sub(match):
     title = match.group(2)
     return '<h{0}>{1}</h{0}>'.format(level, title)
 
-setext_header_re = re.compile(r'(?:(?<=\n)|(?<=\A))(.*?)\n(=+|-+)')
+setext_header_re = re.compile(r'(?:(?<=\n)|(?<=\A))(.*?)\n(=+|-+)\n')
 def setext_header_sub(match):
     """Substitutes setext headers (defined with underscores)."""
     title = match.group(1)

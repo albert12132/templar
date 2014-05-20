@@ -15,7 +15,7 @@ import link
 
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from config import TEMPLATE_DIRS, BASE_PATH, CONFIGS, CONTROLLERS
+from config import TEMPLATE_DIRS, BASE_PATH, CONFIGS
 
 ##################
 # REGEX PATTERNS #
@@ -234,7 +234,7 @@ def parse_content(content):
     """
     if not content:
         return {}
-    return link.link(content, CONTROLLERS)[1]
+    return link.link(content)[1]
 
 
 def main():
