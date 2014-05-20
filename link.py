@@ -34,7 +34,7 @@ def retrieve_and_link(filename, cache):
     with open(filename, 'r') as f:
         text = f.read()
     text = include_re.sub(make_link_sub(cache), text)
-    text = cache_blocks(filename, text, cache)
+    cache_blocks(filename, text, cache)
     return text, cache
 
 def apply_controller(text):
