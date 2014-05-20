@@ -6,7 +6,7 @@ import html
 TAB_SIZE = 4
 SALT = bytes(randint(0, 1000000))
 def hash_text(s, label):
-    return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest()
+    return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest() + '-' + label
 
 def convert(text):
     text, variables = store_vars(text)
@@ -229,7 +229,7 @@ paragraph_re = re.compile(r"""
 def paragraph_sub(match):
     return '<p>{}</p>'.format(match.group(0))
 
-hash_re = re.compile(r"(?:code|link|tag|list|pre)-[\da-f]+")
+hash_re = re.compile(r"(?P<label>code|link|tag|list|pre)-[\da-f]+-(?P=label)")
 pre_re = re.compile(r"""
     (?P<space>[ ]*)
     <pre>
