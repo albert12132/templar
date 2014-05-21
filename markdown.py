@@ -13,12 +13,13 @@ def convert(text):
     text = handle_whitespace(text)
     hashes = {}
     text = hash_blocks(text, hashes)
-    text = hash_blockquote(text, hashes)
     text = convert_lists(text, hashes)
+    text = hash_blockquote(text, hashes)
     text = hash_codeblocks(text, hashes)
     text = hash_code(text, hashes)
     text = hash_links(text, hashes)
     text = hash_tags(text, hashes)
+    text = hr_re.sub(hr_sub, text)
     text = emphasis_re.sub(emphasis_sub, text)
     text = escape_re.sub(escapes_sub, text)
     text = atx_header_re.sub(atx_header_sub, text)
@@ -38,7 +39,7 @@ def handle_whitespace(text):
     text = whitespace_re.sub('', text).strip()
     return text
 
-vars_re = re.compile('^~\s*(.*?):\s*(.*?)\n', re.M | re.S)
+vars_re = re.compile('^~\s+(.*?):\s*(.*?)\n', re.M | re.S)
 def store_vars(text):
     """Extracts variables that can be used in templating engines.
 
@@ -137,7 +138,7 @@ def hash_codeblocks(text, hashes):
         block = '<pre><code>{}</code></pre>'.format(block)
         hashed = hash_text(block, 'pre')
         hashes[hashed] = block
-        return hashed + '\n\n'
+        return '\n' + hashed + '\n\n'
     return codeblock_re.sub(codeblock_sub, text)
 
 blockquote_re = re.compile(r"""
@@ -173,16 +174,33 @@ def hash_code(text, hashes):
         return hashed
     return code_re.sub(code_sub, text)
 
-link_re = re.compile(r'(?<!\\)(!?)\[(.*?)\]\((.*?)\)', re.S)
+link_re = re.compile(r"""
+(?<!\\)
+(!?)
+\[(.*?)\]
+\(
+    \s*
+    (.*?)
+    (\s*(?P<quote>["']).+?(?P=quote))?
+    \s*
+\)
+""", re.X | re.S)
 def hash_links(text, hashes):
     def link_sub(match):
         is_img = match.group(1) != ''
         content = match.group(2)
         link = match.group(3)
-        if is_img:
-            result = '<img src="{0}" alt="{1}">'.format(link, content)
+        title = match.group(4)
+        if title:
+            title = ' title={0}'.format(title.strip())
         else:
-            result = '<a href="{0}">{1}</a>'.format(link, content)
+            title = ''
+        if is_img:
+            result = '<img src="{0}" alt="{1}"{2}>'.format(
+                    link, content, title)
+        else:
+            result = '<a href="{0}"{2}>{1}</a>'.format(link, content,
+                    title)
         hashed = hash_text(result, 'link')
         hashes[hashed] = result
         return hashed
@@ -195,6 +213,10 @@ def hash_tags(text, hashes):
         hashes[hashed] = match.group(0)
         return hashed
     return tag_re.sub(tag_sub, text)
+
+hr_re = re.compile(r"\n\n(\*{3,}|-{3,})\n\n", re.S)
+def hr_sub(match):
+    return '\n\n<hr/>\n\n'
 
 emphasis_markers = r'\*{1,3}|_{1,3}'
 emphasis_re = re.compile(
