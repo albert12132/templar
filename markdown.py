@@ -24,6 +24,7 @@ def convert(text):
     text = setext_header_re.sub(setext_header_sub, text)
     text = paragraph_re.sub(paragraph_sub, text)
     text = unhash(text, hashes)
+    text = slug_re.sub(slug_sub, text)
     return text, variables
 
 retab_re = re.compile(r'(.*?)\t', re.M)
@@ -243,6 +244,16 @@ def unhash(text, hashes):
         text = hash_re.sub(retrieve_match, text)
     text = pre_re.sub(lambda m: re.sub('^' + m.group(1), '', m.group(0), flags=re.M), text)
     return text
+
+slug_re = re.compile(r"<\s*(?P<level>h[0-6])\s*>\s*(.*?)\s*<\s*/\s*(?P=level)\s*>")
+def slug_sub(match):
+    level = match.group(1)
+    title = match.group(2)
+    slug = title.lower()
+    slug = slug.replace(' ', '-')
+    slug = re.sub(r'<.+?>|[^\w-]', '', slug)
+    return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
+
 
 if __name__ == '__main__':
     import sys
