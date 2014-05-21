@@ -79,18 +79,24 @@ def convert_lists(text, hashes):
         list_re = re.compile(r"""
             (
                 (?:(?<=\n)|(?<=\A))
+                [ ]{0,3}
+                %s
+                (?!\ %s\ )
+                [ ].+?(?=\n\n(?![ ]{4})|\n*\Z)
                 (?:
-                    (?:\n*)
-                    %s
-                    (?!\ %s\ )
-                    [ ]
-                    .+?
-                )+
-                (?=\Z|\n{2,}[^ \n])
+                    (?:
+                        [ ]{0,3}
+                        %s
+                        (?!\ %s\ )
+                        [ ].+?(?=\n\n(?![ ]{4})|\n*\Z)
+                    )
+                   |
+                    \n
+                )*
             )
-        """ % (marker, marker), re.S | re.X)
+        """ % (marker, marker, marker, marker), re.S | re.X)
         for lst in list_re.findall(text):
-            items = re.split(r'(?:\n|\A)%s ' % marker, lst)[1:]
+            items = re.split(r'(?:\n|\A) {0,3}%s ' % marker, lst)[1:]
             whole_list = ''
             for item in items:
                 item = re.sub(r'^ {1,4}', '', item, flags=re.M)
@@ -99,14 +105,14 @@ def convert_lists(text, hashes):
                 if match and match.group(0) == item.strip():
                     item = match.group(1)
                 whole_list += '<li>{}</li>\n'.format(item)
-            whole_list = '\n<{0}l>\n{1}\n</{0}l>'.format(
+            whole_list = '<{0}l>\n{1}\n</{0}l>'.format(
                     style,
                     re.sub('^', '  ', whole_list.strip(), flags=re.M))
             hashed = hash_text(whole_list, 'list')
             hashes[hashed] = whole_list
             start = text.index(lst)
             end = start + len(lst)
-            text = text[:start] + hashed + text[end:]
+            text = text[:start] + '\n' + hashed + '\n\n' + text[end:]
     return text
 
 codeblock_re = re.compile(r"""
