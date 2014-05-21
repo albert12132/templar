@@ -12,9 +12,10 @@ def convert(text):
     text, variables = store_vars(text)
     text = handle_whitespace(text)
     hashes = {}
+    text = hash_blocks(text, hashes)
+    text = hash_blockquote(text, hashes)
     text = convert_lists(text, hashes)
     text = hash_codeblocks(text, hashes)
-    text = blockquote_re.sub(blockquote_sub, text)
     text = hash_code(text, hashes)
     text = hash_links(text, hashes)
     text = hash_tags(text, hashes)
@@ -55,6 +56,23 @@ def store_vars(text):
     variables = {var: value for var, value in vars_re.findall(text)}
     text = vars_re.sub('', text)
     return text, variables
+
+block_elements = "blockquote|div|form|hr|noscript|ol|p|pre|table"
+block_re = re.compile(r"""
+    (?:(?<=\n)|(?<=\A))
+    <\s*(?P<tag>%s)\s?.*?>
+    .*?
+    \n<\s*/\s*(?P=tag)\s?.*?>
+""" % block_elements, re.S | re.X)
+def hash_blocks(text, hashes):
+    def sub(match):
+        block = match.group(0)
+        hashed = hash_text(block, 'block')
+        hashes[hashed] = block
+        return hashed
+    return block_re.sub(sub, text)
+
+
 
 def convert_lists(text, hashes):
     for style, marker in (('u', '[+*-]'), ('o', r'\d+\.')):
@@ -119,23 +137,26 @@ def hash_codeblocks(text, hashes):
 blockquote_re = re.compile(r"""
     (
         (?:(?<=\n)|(?<=\A))
-        >.*?\n
-        (?:[^\n]+?\n)*
+        >[ ].*?(?=\n\n|\n*\Z)
         (?:
             (?:
-                >.*?\n
-                (?:[^\n]+?\n)*
+                >[ ].*?(?=\n\n|\n*\Z)
             )
            |
             \n
         )*
-        (?=\n*(?!>))
     )
 """, re.S | re.X)
-def blockquote_sub(match):
-    block = match.group(1).rstrip('\n')
-    block = re.sub(r'(?:(?<=\n)|(?<=\A))> ?', '', block)
-    return '<blockquote>\n{}\n</blockquote>\n\n'.format(block)
+def hash_blockquote(text, hashes):
+    def blockquote_sub(match):
+        block = match.group(1)
+        block = re.sub(r'(?:(?<=\n)|(?<=\A))> ', '', block)
+        block = convert(block)[0]
+        block = '<blockquote>\n{}\n</blockquote>\n'.format(block)
+        hashed = hash_text(block, 'blockquote')
+        hashes[hashed] = block
+        return hashed + '\n\n'
+    return blockquote_re.sub(blockquote_sub, text)
 
 code_re = re.compile(r'(?<!\\)(?P<ticks>`+) ?(.*?) ?(?P=ticks)', re.S)
 def hash_code(text, hashes):
@@ -203,14 +224,14 @@ escape_re = re.compile(r"""\\(
 def escapes_sub(match):
     return match.group(1)
 
-atx_header_re = re.compile(r'^(#{1,6})\s*(.*)$', re.M)
+atx_header_re = re.compile(r'^(#{1,6})\s*(.*?)\s*#*$', re.M)
 def atx_header_sub(match):
     """Substitutes atx headers (headers defined using #'s)."""
     level = len(match.group(1))
     title = match.group(2)
     return '<h{0}>{1}</h{0}>'.format(level, title)
 
-setext_header_re = re.compile(r'(?:(?<=\n)|(?<=\A))(.*?)\n(=+|-+)\n')
+setext_header_re = re.compile(r'(?:(?<=\n)|(?<=\A))(.*?)\n(=+|-+)(?=\n)')
 def setext_header_sub(match):
     """Substitutes setext headers (defined with underscores)."""
     title = match.group(1)
@@ -218,7 +239,7 @@ def setext_header_sub(match):
     return '<h{0}>{1}</h{0}>'.format(level, title)
 
 avoids = """
-    (?:(?:tag|pre|list)-[\da-f]+)|<h(?P<level>[1-6])>.*?</h(?P=level)>
+    (?:(?P<hash>blockquote|block|tag|pre|list)-[\da-f]+-(?P=hash))|<h(?P<level>[1-6])>.*?</h(?P=level)>
 """
 paragraph_re = re.compile(r"""
     (?:(?<=\n\n)|(?<=\A))
@@ -230,7 +251,7 @@ paragraph_re = re.compile(r"""
 def paragraph_sub(match):
     return '<p>{}</p>'.format(match.group(0))
 
-hash_re = re.compile(r"(?P<label>code|link|tag|list|pre)-[\da-f]+-(?P=label)")
+hash_re = re.compile(r"(?P<label>blockquote|block|code|link|tag|list|pre)-[\da-f]+-(?P=label)")
 pre_re = re.compile(r"""
     (?P<space>[ ]*)
     <pre>
