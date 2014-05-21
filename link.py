@@ -1,7 +1,10 @@
 import re
 from markdown import convert
 import importlib
-import controller
+try:
+    import controller
+except ImportError:
+    controller = None
 
 include_re = re.compile(r'<\s*include\s+(.+?)(?::(.+?))?\s*>')
 block_re = re.compile(r"""
@@ -48,9 +51,10 @@ def link(filename):
     text, variables = convert(text)
     for k, v in variables.items():
         cache[k] = v
-    text = apply_controller(text)
-    for k, v in controller.configs.items():
-        cache[k] = v
+    if controller:
+        text = apply_controller(text)
+        for k, v in controller.configs.items():
+            cache[k] = v
     return cache_blocks('', text, cache), cache
 
 if __name__ == '__main__':
