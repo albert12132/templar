@@ -24,6 +24,7 @@ def convert(text):
     text = hr_re.sub(hr_sub, text)
     text = emphasis_re.sub(emphasis_sub, text)
     text = escape_re.sub(escapes_sub, text)
+    text = auto_escape_re.sub(auto_escape_sub, text)
     text = atx_header_re.sub(atx_header_sub, text)
     text = setext_header_re.sub(setext_header_sub, text)
     text = paragraph_re.sub(paragraph_sub, text)
@@ -283,6 +284,10 @@ def emphasis_sub(match):
         return '<strong>{0}</strong>'.format(content)
     elif level == 1:
         return '<em>{0}</em>'.format(content)
+
+auto_escape_re = re.compile(r"&(?!#[xX]?[0-9a-fA-F]+)")
+def auto_escape_sub(match):
+    return html.escape(match.group(0))
 
 escape_re = re.compile(r"""\\(
     \*  |
