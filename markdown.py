@@ -30,7 +30,8 @@ def convert(text):
     text = paragraph_re.sub(paragraph_sub, text)
     text = unhash(text, hashes)
     text = slug_re.sub(slug_sub, text)
-    return text, variables
+    toc = scrape_toc(text)
+    return text, variables, toc
 
 retab_re = re.compile(r'(.*?)\t', re.M)
 def retab_sub(match):
@@ -358,6 +359,15 @@ def slug_sub(match):
     slug = slug.replace(' ', '-')
     slug = re.sub(r'<.+?>|[^\w-]', '', slug)
     return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
+
+header_re = re.compile(r"""
+<\s*h([1-6])\s*(?:id=(['"])(.*?)\2)?>
+(.*?)
+<\s*/\s*h\1\s*>
+""", re.X)
+def scrape_toc(text):
+    return [(h[0], h[2], h[3]) for h in header_re.findall(text)]
+
 
 
 if __name__ == '__main__':

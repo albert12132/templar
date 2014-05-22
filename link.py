@@ -48,13 +48,14 @@ def apply_controller(text):
 def link(filename):
     text, _ = retrieve_and_link(filename, {})
     cache = {}
-    text, variables = convert(text)
+    text, variables, toc = convert(text)
     for k, v in variables.items():
         cache[k] = v
     if controller:
         text = apply_controller(text)
         for k, v in controller.configs.items():
             cache[k] = v
+        cache['table-of-contents'] = controller.toc(toc)
     return cache_blocks('', text, cache), cache
 
 if __name__ == '__main__':
