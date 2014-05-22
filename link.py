@@ -45,6 +45,14 @@ def apply_controller(text):
         text = regex.sub(sub, text)
     return text
 
+header_re = re.compile(r"""
+<\s*h([1-6])(?:.*?id=(['"])(.*?)\2.*?)?>
+(.*?)
+<\s*/\s*h\1\s*>
+""", re.X)
+def scrape_toc(text):
+    return [(h[0], h[2], h[3]) for h in header_re.findall(text)]
+
 def link(filename):
     text, _ = retrieve_and_link(filename, {})
     cache = {}
@@ -55,6 +63,7 @@ def link(filename):
         text = apply_controller(text)
         for k, v in controller.configs.items():
             cache[k] = v
+        toc = scrape_toc(text)
         cache['table-of-contents'] = controller.toc(toc)
     return cache_blocks('', text, cache), cache
 

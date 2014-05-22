@@ -30,8 +30,7 @@ def convert(text):
     text = paragraph_re.sub(paragraph_sub, text)
     text = unhash(text, hashes)
     text = slug_re.sub(slug_sub, text)
-    toc = scrape_toc(text)
-    return text, variables, toc
+    return text, variables
 
 retab_re = re.compile(r'(.*?)\t', re.M)
 def retab_sub(match):
@@ -85,7 +84,7 @@ def store_references(text):
 block_elements = "blockquote|div|form|hr|noscript|ol|p|pre|table"
 block_re = re.compile(r"""
     (?:(?<=\n)|(?<=\A))
-    <\s*(?P<tag>%s)\s?.*?>
+    <\s*(?P<tag>%s)(?:\s+.*?)>
     .*?
     \n<\s*/\s*(?P=tag)\s?.*?>
 """ % block_elements, re.S | re.X)
@@ -147,11 +146,9 @@ codeblock_re = re.compile(r"""
         (?:
             \n
            |
-            (?:
-                [ ]{4}.+?(?:\n|\Z)
-            )
+            [ ]{4}.+?(?:\n|\Z)
         )*
-        (?=(?:\n*(?![ ]{4}))|\Z)
+        (?=(?![ ]{4})|\Z)
     )
 """, re.S | re.X)
 def hash_codeblocks(text, hashes):
@@ -360,20 +357,7 @@ def slug_sub(match):
     slug = re.sub(r'<.+?>|[^\w-]', '', slug)
     return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
 
-header_re = re.compile(r"""
-<\s*h([1-6])(?:.*?id=(['"])(.*?)\2.*?)?>
-(.*?)
-<\s*/\s*h\1\s*>
-""", re.X)
-def scrape_toc(text):
-    return [(h[0], h[2], h[3]) for h in header_re.findall(text)]
-
-
-
 if __name__ == '__main__':
     import sys
     with open(sys.argv[1], 'r') as f:
-        # print(convert(f.read())[0])
-        for h in convert(f.read())[2]:
-            print(h)
-        # convert(f.read())[0]
+        print(convert(f.read())[0])
