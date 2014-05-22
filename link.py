@@ -56,7 +56,7 @@ def scrape_toc(text):
 def link(filename):
     text, _ = retrieve_and_link(filename, {})
     cache = {}
-    text, variables, toc = convert(text)
+    text, variables = convert(text)
     for k, v in variables.items():
         cache[k] = v
     if controller:
