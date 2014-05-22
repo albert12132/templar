@@ -316,7 +316,7 @@ def atx_header_sub(match):
     title = match.group(2)
     return '<h{0}>{1}</h{0}>'.format(level, title)
 
-setext_header_re = re.compile(r'(?:(?<=\n)|(?<=\A))(.*?)\n(=+|-+)(?=\n)')
+setext_header_re = re.compile(r'(?:(?<=\n)|(?<=\A))(.*?)\n(=+|-+)(?=\n|\Z)')
 def setext_header_sub(match):
     """Substitutes setext headers (defined with underscores)."""
     title = match.group(1)
@@ -361,7 +361,7 @@ def slug_sub(match):
     return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
 
 header_re = re.compile(r"""
-<\s*h([1-6])\s*(?:id=(['"])(.*?)\2)?>
+<\s*h([1-6])(?:.*?id=(['"])(.*?)\2.*?)?>
 (.*?)
 <\s*/\s*h\1\s*>
 """, re.X)
@@ -373,5 +373,7 @@ def scrape_toc(text):
 if __name__ == '__main__':
     import sys
     with open(sys.argv[1], 'r') as f:
-        print(convert(f.read())[0])
+        # print(convert(f.read())[0])
+        for h in convert(f.read())[2]:
+            print(h)
         # convert(f.read())[0]
