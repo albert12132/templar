@@ -58,18 +58,135 @@ let's say our working directory looks like this:
 To compile `hello_world.md` using the `example.html` template, use the
 following command:
 
-    python3 templar/compile.py example.html -s src/hello_world.md
+    python3 templar example.html -s src/hello_world.md
 
 This will print the compiled result to standard out. To save the result
 in a file, specify a destination with the `-d` flag:
 
-    python3 templar/compile.py example.html -s src/hello_world.md -d hello_world.html
+    python3 templar example.html -s src/hello_world.md -d hello_world.html
 
 This will save the result in a file called `hello_world.html` in the
 `base_path` directory.
 
 For a more extensive example of how to use Templar, see the repository
 for my [personal website](https://github.com/albert12132/albertwu.org).
+It is often helpful to use a Makefile instead of directly running
+Templar every time.
+
+Source files
+------------
+
+Currently, Templar only supports Markdown as its content markup
+language. A basic source file can simply contain regular Markdown.
+There are also two special tags that can be used: the `<block>` tag and
+the `<include>` tag.
+
+### `block` tag
+
+The `<block>` tag allows you to name a certain section of Markdown:
+
+    Some Markdown out here
+
+    <block example>
+
+    Example
+    -------
+    This Markdown is within the block.
+
+    </block example>
+
+The opening `block` tag consists of triangular braces, `< >`, the word
+`block`, followed by a space, and then the name of the block. In the
+example above, the name of the block is `example`.
+
+The closing `block` tag uses a forward slash and also needs to contain
+the name of the block that it closes. This allows you to nest blocks
+inside of each other:
+
+    <block outer>
+
+    <block inner>
+    This stuff here would be included in both the inner block and the
+    outer block
+    </block inner>
+
+    But this stuff would only be included in the outer block.
+
+    </block outer>
+
+Block names must be unique within a single file.
+
+### `include` tag
+
+The `<include>` tag allows you to link different Markdown sources
+together:
+
+    Topics
+    ------
+    <include path/to/topics>
+
+    References
+    ----------
+    <include path/to/references:blockA>
+
+The idea is that sometimes, it is useful to write modular Markdown
+sources to make it easier to manage directories. This also makes it
+faster to refer to the same Markdown file without duplicating its
+contents.
+
+In the example above, the first `include` tag simply uses a filepath.
+The filepath should be written *relative to the directory in which you
+will run Templar*, not necessarily the directory that houses the
+Markdown file. This format will simply copy all of the contents listed
+inside of `path/to/topics.md` (notice that the `.md` extension was
+omitted in the `include`) into the location of the `include` tag.
+
+The second `include` tag also references a `blockA` inside of the file
+`path/to/references.md`. This is useful if you only want to include a
+subsection of another Markdown file. The syntax is the following:
+
+    <include path/to/file:block-name>
+
+### Custom patterns
+
+You can define custom patterns in your Markdown, like the following:
+
+    Question 1
+    ----------
+
+    A question here.
+
+    <solution>
+
+    This is the solution to the question: `f = lambda x: f(x)`.
+
+    </solution>
+
+You can specify how to convert the `<solution>...</solution>` pattern
+by defining a regular expression in `controller.py`, which should be
+located *in the directory where you run Templar*. For example,
+
+    solution_re = re.compile(r"<solution>(.*?)</solution>", re.S)
+    def solution_sub(match):
+        return "<b>Solution</b>: " + match.group(1)
+
+    regexes = [
+        (solution_re, solution_sub),
+    ]
+
+would replace the `solution` tag with a boldface "Solution: " followed
+by the contents within the solution tag. All regular expressions should
+be listed inside of the `regexes` list (in `controller.py`), along with
+the corresponding substitution function.
+
+**Important note**: the custom patterns are evaluated **after** all
+linking (`include` tags) and all Markdown parsing has occurred. Thus,
+in the example above, `solution_re` should expect the contents of the
+solution tag to look like this:
+
+    <p>this is the solution to the question: <code>f = lambda x:
+    f(x)</code>.</p>
+
 
 Templates
 ---------
@@ -162,15 +279,20 @@ The result of compiling `child.html` will look like this:
 If a child template choose not to inherit a tag, that tag will simply
 be removed from the final document.
 
-Source files
-------------
+Acknowledgements
+----------------
 
-Currently, Templar only supports Markdown as its content markup
-language. A basic source file can simply contain regular Markdown.
-There are also two special tags that can be used: the `<include>` tag
-and the `<block>` tag.
+Templar is an extension of the program that used to generate my
+personal website. The idea for linking (the `include` and `block` tags)
+was taken from developing the publisher for UC Berkeley's CS 61A labs.
 
-### The `include` tag
+The Markdown parser is a re-implementation of
+[markdown2](https://github.com/trentm/python-markdown2), a Python
+implementation of the original Perl Markdown parser. The variant of
+Markdown that Templar supports is a subset of [Daring Fireball's
+Markdown
+specification](http://daringfireball.net/projects/markdown/syntax).
 
-The `<include>` tag allows you to 
-
+Syntax for template inheritance and expression substitution are
+inspired by [Django](https://www.djangoproject.com/)'s templating
+syntax, as well as [ejs](http://embeddedjs.com/)'s templating syntax.
