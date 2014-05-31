@@ -5,18 +5,52 @@ import re
 from hashlib import sha1
 from random import randint
 
-TAB_SIZE = 4
-SALT = bytes(randint(0, 1000000))
-def hash_text(s, label):
-    return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest() + '-' + label
+##############
+# Public API #
+##############
 
 def convert(text):
-    text, variables, references = preprocess(text)
-    text, hashes = apply_hashes(text, references)
-    text = apply_substitutions(text)
-    text = unhash(text, hashes)
-    text = postprocess(text)
-    return text, variables
+    return Markdown(text).text
+
+class Markdown:
+    def __init__(self, text):
+        self.text, self.variables, self.references = preprocess(text)
+        self.text = self.convert(self.text).strip()
+
+    def convert(self, text):
+        text, hashes = apply_hashes(text, self)
+        text = apply_substitutions(text)
+        text = unhash(text, hashes)
+        text = postprocess(text)
+        return text
+
+    def __add__(self, other):
+        if type(other) not in (Markdown, str):
+            raise ValueError('Cannot add {} to Markdown object'.format(
+                             other))
+        return self.text + other
+
+    def __radd__(self, other):
+        return self + other
+
+    def __getitem__(self, index):
+        if type(index) == int:
+            return self.text[index]
+        elif type(index) == str:
+            return self.variables[index]
+        else:
+            raise KeyError('Invalid index/key for Markdown object: {}'.format(index))
+
+    def __setitem__(self, key, value):
+        if type(key) != str:
+            raise KeyError('Invalid key for Markdown object: {}'.format(index))
+        self.variables[key] = value
+
+    def __repr__(self):
+        return self.text
+
+
+
 
 ##################
 # Pre-Processing #
@@ -27,6 +61,8 @@ def preprocess(text):
     text, references = get_references(text)
     text = handle_whitespace(text)
     return text, variables, references
+
+TAB_SIZE = 4
 
 re_retab = re.compile(r"""
 ([^\t]*?)   # \1 is string before the tab(s)
@@ -137,17 +173,22 @@ def get_references(text):
 # Hashed Conversions #
 ######################
 
-def apply_hashes(text, references):
+def apply_hashes(text, markdown_obj):
     hashes = {}
     text = hash_blocks(text, hashes)
-    text = hash_lists(text, hashes)
-    text = hash_blockquotes(text, hashes)
+    text = hash_lists(text, hashes, markdown_obj)
+    text = hash_blockquotes(text, hashes, markdown_obj)
     text = hash_codeblocks(text, hashes)
     text = hash_codes(text, hashes)
     text = hash_inline_links(text, hashes)
-    text = hash_reference_links(text, hashes, references)
+    text = hash_reference_links(text, hashes, markdown_obj)
     text = hash_tags(text, hashes)
     return text, hashes
+
+SALT = bytes(randint(0, 1000000))
+def hash_text(s, label):
+    return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest() + '-' + label
+
 
 block_tags = "blockquote|div|form|hr|noscript|ol|p|pre|table"
 re_block = re.compile(r"""
@@ -198,7 +239,7 @@ re_list = r"""
     )
 )+                          # capture multiple list items
 """
-def hash_lists(text, hashes):
+def hash_lists(text, hashes, markdown_obj):
     """Hashes ordered and unordered lists.
 
     re_list captures as many consecutive list items as possible and
@@ -230,7 +271,7 @@ def hash_lists(text, hashes):
             whole_list = ''
             for item in items:
                 item = re.sub(r'^ {1,4}', '', item, flags=re.M)
-                item = convert(item)[0]
+                item = markdown_obj.convert(item)
                 match = re.match('<p>(.*?)</p>', item, flags=re.S)
                 if match and match.group(0) == item.strip():
                     item = match.group(1)
@@ -287,7 +328,7 @@ re_blockquote = re.compile(r"""
     >[ ].*?\n*(?:\n\n|\Z)
 )+
 """, re.S | re.X)
-def hash_blockquotes(text, hashes):
+def hash_blockquotes(text, hashes, markdown_obj):
     """Hashes block quotes.
 
     Block quotes are defined to be lines that start with "> " (the
@@ -302,7 +343,7 @@ def hash_blockquotes(text, hashes):
     def sub(match):
         block = match.group(0).strip()
         block = re.sub(r'(?:(?<=\n)|(?<=\A))> ', '', block)
-        block = convert(block)[0]
+        block = markdown_obj.convert(block)
         block = '<blockquote>\n{}\n</blockquote>'.format(block)
         hashed = hash_text(block, 'blockquote')
         hashes[hashed] = block
@@ -388,7 +429,7 @@ re_reference_link = re.compile(r"""
     (.*?)   # \3 is reference id
 \]
 """, re.X | re.S)
-def hash_reference_links(text, hashes, refs):
+def hash_reference_links(text, hashes, markdown_obj):
     """Hashes an <a> link or an <img> link.
 
     This function only converts reference link styles:
@@ -412,7 +453,7 @@ def hash_reference_links(text, hashes, refs):
         ref = match.group(3).strip().lower()
         if not ref:
             ref = content.strip().lower()
-        link, title = refs[ref]
+        link, title = markdown_obj.references[ref]
         if title:
             title = ' title="{0}"'.format(title)
         if is_img:
@@ -656,7 +697,7 @@ def main():
             exit(1)
         with open(args.file, 'r') as f:
             text = f.read()
-    result = convert(text)[0]
+    result = convert(text)
     if args.destination:
         with open(args.destination, 'w') as f:
             f.write(result)
