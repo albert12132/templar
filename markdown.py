@@ -1,7 +1,9 @@
+import argparse
 import html
+import os
 import re
-from random import randint
 from hashlib import sha1
+from random import randint
 
 TAB_SIZE = 4
 SALT = bytes(randint(0, 1000000))
@@ -9,32 +11,22 @@ def hash_text(s, label):
     return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest() + '-' + label
 
 def convert(text):
-    text, variables = get_variables(text)
-    text, references = get_references(text)
-    text = handle_whitespace(text)
-    hashes = {}
-    text = hash_blocks(text, hashes)
-    text = hash_lists(text, hashes)
-    text = hash_blockquotes(text, hashes)
-    text = hash_codeblocks(text, hashes)
-    text = hash_codes(text, hashes)
-    text = hash_inline_links(text, hashes)
-    text = hash_reference_links(text, hashes, references)
-    text = hash_tags(text, hashes)
-    text = hr_re.sub(hr_sub, text)
-    text = emphasis_re.sub(emphasis_sub, text)
-    text = escape_re.sub(escapes_sub, text)
-    text = auto_escape_re.sub(auto_escape_sub, text)
-    text = atx_header_re.sub(atx_header_sub, text)
-    text = setext_header_re.sub(setext_header_sub, text)
-    text = paragraph_re.sub(paragraph_sub, text)
+    text, variables, references = preprocess(text)
+    text, hashes = apply_hashes(text, references)
+    text = apply_substitutions(text)
     text = unhash(text, hashes)
-    text = slug_re.sub(slug_sub, text)
+    text = postprocess(text)
     return text, variables
 
 ##################
 # Pre-Processing #
 ##################
+
+def preprocess(text):
+    text, variables = get_variables(text)
+    text, references = get_references(text)
+    text = handle_whitespace(text)
+    return text, variables, references
 
 re_retab = re.compile(r"""
 ([^\t]*?)   # \1 is string before the tab(s)
@@ -145,6 +137,17 @@ def get_references(text):
 # Hashed Conversions #
 ######################
 
+def apply_hashes(text, references):
+    hashes = {}
+    text = hash_blocks(text, hashes)
+    text = hash_lists(text, hashes)
+    text = hash_blockquotes(text, hashes)
+    text = hash_codeblocks(text, hashes)
+    text = hash_codes(text, hashes)
+    text = hash_inline_links(text, hashes)
+    text = hash_reference_links(text, hashes, references)
+    text = hash_tags(text, hashes)
+    return text, hashes
 
 block_tags = "blockquote|div|form|hr|noscript|ol|p|pre|table"
 re_block = re.compile(r"""
@@ -479,6 +482,16 @@ def unhash(text, hashes):
 # Substitutions #
 #################
 
+def apply_substitutions(text):
+    text = hr_re.sub(hr_sub, text)
+    text = emphasis_re.sub(emphasis_sub, text)
+    text = escape_re.sub(escapes_sub, text)
+    text = auto_escape_re.sub(auto_escape_sub, text)
+    text = atx_header_re.sub(atx_header_sub, text)
+    text = setext_header_re.sub(setext_header_sub, text)
+    text = paragraph_re.sub(paragraph_sub, text)
+    return text
+
 hr_re = re.compile(r"""
 \n\n                    # leading blank line
 (
@@ -579,6 +592,10 @@ def paragraph_sub(match):
 # Post-processing #
 ###################
 
+def postprocess(text):
+    text = slug_re.sub(slug_sub, text)
+    return text
+
 slug_re = re.compile(r"""
 <
     \s*
@@ -606,7 +623,46 @@ def slug_sub(match):
     slug = re.sub(r'<.+?>|[^\w-]', '', slug)
     return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
 
+##########################
+# Command-line Interface #
+##########################
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--file', type=str,
+                        help="Convert contents of Markdown file")
+    parser.add_argument('-d', '--destination', type=str,
+                        help="Store result in destination file")
+    args = parser.parse_args()
+
+    if not args.file:
+        text = ''
+        print('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')
+        while True:
+            try:
+                text += input() + '\n'
+            except EOFError:
+                print('--- END MARKDOWN ---')
+                break
+            except KeyboardInterrupt:
+                print('\n--- Aborting script ---')
+                exit(1)
+    else:
+        if not os.path.exists(args.file):
+            print('File ' + args.file + ' does not exist.')
+            exit(1)
+        elif not os.path.isfile(args.file):
+            print(args.file + ' is not a valid file')
+            exit(1)
+        with open(args.file, 'r') as f:
+            text = f.read()
+    result = convert(text)[0]
+    if args.destination:
+        with open(args.destination, 'w') as f:
+            f.write(result)
+        print('Result can be found in ' + args.destination)
+    else:
+        print(result)
+
 if __name__ == '__main__':
-    import sys
-    with open(sys.argv[1], 'r') as f:
-        print(convert(f.read())[0])
+    main()

@@ -7,6 +7,13 @@ TODO
 * refactor and add documentation
 * add ability to link and compile non markdown/html files (e.g. python
   source)
+* add tests/testing framework
+* Add argparse to link.py
+
+Markdown
+--------
+
+* add html block tags
 
 Bugs
 ----
