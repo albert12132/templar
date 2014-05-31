@@ -8,38 +8,205 @@ try:
 except ImportError:
     controller = None
 
-include_re = re.compile(r'<\s*include\s+(.+?)(?::(.+?))?\s*>')
-block_re = re.compile(r"""
-    <\s*block\s+(?P<name>.+?)\s*>
-    (.*?)
-    </\s*block\s+(?P=name)\s*>
-""", re.S | re.X)
+##############
+# Public API #
+##############
 
-def make_link_sub(cache):
+def link(text):
+    """Link the text based on <include> tags.
+
+    An include tag should have the following syntax:
+
+        <include path/to/file.ext>
+
+    The file can be of any filetype, and include tags can have paths
+    to any filetype (even filetypes that are different from the
+    original source file). Using the above syntax, all of the contents
+    of the included file will be substituted for the tag.
+
+    There is an alternate syntax:
+
+        <include path/to/file.ext:blockName>
+
+    The block specified by blockName should be defined using the
+    <block> tag in file.ext. Only the contents within blockName will
+    be included.
+
+    Note that blockName is a specific use case of a general pattern:
+
+        <include path/to/file.ext:blockRegex>
+
+    where blockRegex is a regular expression that matches block
+    names. Each block that is matched by blockRegex acts as if it
+    had been written in its own include tag. For example, if the
+    regular expression "block\d" matches three blocks "block1",
+    "block2", and "block3", then the include tag will be expanded into
+
+        <include path/to/file.ext:block1>
+        <include path/to/file.ext:block2>
+        <include path/to/file.ext:block3>
+
+    Note: the regular expression must match the entire block name. For
+    example, if blockRegex was "block\d", it would not match a block
+    called "block10".
+
+    RETURNS:
+    text -- str; the text after resolving all include tags. Any block
+            tags that are left over are preserved in text.
+    """
+    return substitute_links(text, {})
+
+def retrieve_blocks(text):
+    """Strip block tags from text and return a mapping of block
+    names to block contents.
+
+    RETURNS:
+    text     -- str; the text with all block tags removed
+    mappings -- dict; mapping of block names to block contents
+                (strings)
+    """
+    cache = {}
+    return cache_blocks('', text, cache), cache
+
+def scrape_headers(text, regex, translate):
+    """Scrape headers based on a regular expression and substitution.
+
+    PARAMETERS:
+    text      -- str; the source text
+    regex     -- str or RegexObject; a regular expression that defines
+                 the semantics of a header
+    translate -- function; a function that takes in a Match object.
+                 The translation function converts the match into
+                 a final representation of the header (i.e. the
+                 return value will typically be a string, but can
+                 be any object).
+
+    regex and translate provide some flexibility in defining what a
+    "header" is. For example, a header can be defined as all
+    <h[0-6]> tags in an HTML document to create a table of contents.
+    Alternatively, a header can be defined as a function signature
+    in a Python script.
+
+    RETURNS:
+    headers -- list; headers, as converted by the translate function.
+               the contents of this list can be any data type; they
+               will appear in the order that the original headers
+               are placed within text
+    """
+    # TODO
+
+def substitutions(text, subs):
+    """Apply regular expression substitutions defined for custom
+    patterns.
+
+    PARAMETERS:
+    text -- str; original source text
+    subs -- list of 2-tuples (regex, sub); regex is either a str or a
+            RegexObject, which defines the pattern. sub is a
+            substitution function, as used by re.sub
+
+    The (regex, sub) pairs will be applied in the order that they
+    appear in subs. This means it is the responsibility of the caller
+    of this function to select a proper ordering of substitutions.
+
+    RETURNS:
+    text -- str; the text after applying all substitutions in subs
+    """
+    # TODO
+
+
+def postprocess(text):
+    cache = {}
+    converted = Markdown(text, pre_hook=link)
+    for k, v in converted.variables.items():
+        cache[k] = v
+    if controller:
+        text = apply_controller(converted.text)
+        for k, v in controller.configs.items():
+            cache[k] = v
+        toc = scrape_toc(converted.text)
+        cache['table-of-contents'] = controller.toc(toc)
+    return cache_blocks('', converted.text, cache), cache
+
+# Markdown(text, pre_hook=link)
+
+def link_markdown(text):
+    cache = {}
+    converted = Markdown(text, pre_hook=link)
+    for k, v in converted.variables.items():
+        cache[k] = v
+    if controller:
+        text = apply_controller(converted.text)
+        for k, v in controller.configs.items():
+            cache[k] = v
+        toc = scrape_toc(converted.text)
+        cache['table-of-contents'] = controller.toc(toc)
+    return cache_blocks('', converted.text, cache), cache
+
+
+##########
+# Linker #
+##########
+
+re_include = re.compile(r"""
+    <\s*
+        include
+        \s+
+        (.+?)       # \1 is filename
+        (?:
+            :       # colon as delimiter
+            (.+?)   # \2 is block regex
+        )?          # optional
+    \s*>
+""", re.X)
+def substitute_links(text, cache):
+    """Create a function that acts as a substitution function for the
+    include-tag regex.
+    """
     def link_sub(match):
         filename = match.group(1)
-        block = match.group(2)
-        text, _ = retrieve_and_link(filename, cache)
-        if not block:
-            block = 'all'
-        return cache[filename + ':' + block]
-    return link_sub
-
-def cache_blocks(filename, text, cache):
-    while block_re.search(text):
-        for name, contents in block_re.findall(text):
-            contents = cache_blocks(filename, contents, cache)
-            cache[filename + ':' + name] = contents
-        text = block_re.sub(lambda m: m.group(2), text)
-    cache[filename + ':all'] = text
-    return text
+        regex = match.group(2)
+        text = retrieve_and_link(filename, cache)
+        if not regex:
+            return cache[filename + ':all']
+        return '\n'.join([cache[block] for block in cache
+                          if re.match('^' + regex + '$',
+                                      block.split(':')[-1])])
+    return re_include.sub(link_sub, text)
 
 def retrieve_and_link(filename, cache):
     with open(filename, 'r') as f:
         text = f.read()
-    text = include_re.sub(make_link_sub(cache), text)
+    text = substitute_links(text, cache)
     cache_blocks(filename, text, cache)
-    return text, cache
+    return text
+
+re_block = re.compile(r"""
+    [^\n]*
+    <\s*
+        block
+        \s+
+        (.+?)       # \1 is block name
+    \s*>
+    [^\n]*\n
+    (.*?)           # \2 is block contents
+    \n[^\n]*
+    </\s*        # forward slash to denote closing tag
+        block
+        \s+
+        \1
+    \s*>
+    [^\n]*
+""", re.S | re.X)
+
+def cache_blocks(filename, text, cache):
+    while re_block.search(text):
+        for name, contents in re_block.findall(text):
+            contents = cache_blocks(filename, contents, cache)
+            cache[filename + ':' + name] = contents
+        text = re_block.sub(lambda m: m.group(2), text)
+    cache[filename + ':all'] = text
+    return text
 
 def apply_controller(text):
     for regex, sub in controller.regexes:
@@ -54,19 +221,6 @@ header_re = re.compile(r"""
 def scrape_toc(text):
     return [(h[0], h[2], h[3]) for h in header_re.findall(text)]
 
-def link(filename):
-    text, _ = retrieve_and_link(filename, {})
-    cache = {}
-    converted = Markdown(text)
-    for k, v in converted.variables.items():
-        cache[k] = v
-    if controller:
-        text = apply_controller(converted.text)
-        for k, v in controller.configs.items():
-            cache[k] = v
-        toc = scrape_toc(converted.text)
-        cache['table-of-contents'] = controller.toc(toc)
-    return cache_blocks('', converted.text, cache), cache
 
 ##########################
 # Command-line Interface #
@@ -88,7 +242,13 @@ def main():
     elif not os.path.isfile(args.file):
         print(args.file + ' is not a valid file')
         exit(1)
-    result, cache = link(args.file)
+    with open(args.file, 'r') as f:
+        result = link(f.read())
+    if args.cache:
+        result, cache = retrieve_blocks(result)
+        print('--- Cache keys ---')
+        for k in sorted(cache):
+            print(k)
     if args.destination:
         with open(args.destination, 'w') as f:
             f.write(result)
@@ -97,10 +257,6 @@ def main():
         print('--- BEGIN RESULT ---')
         print(result)
         print('--- END RESULT ---')
-    if args.cache:
-        print('--- Cache keys ---')
-        for k in sorted(cache):
-            print(k)
 
 if __name__ == '__main__':
     main()
