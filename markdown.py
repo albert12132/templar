@@ -468,7 +468,7 @@ def hash_reference_links(text, hashes, markdown_obj):
         return hashed
     return re_reference_link.sub(sub, text)
 
-re_tag = re.compile(r"""<[\w\s:/'"=]+?>""", re.S)
+re_tag = re.compile(r"""<[^>]+?>""", re.S)
 def hash_tags(text, hashes):
     """Hashes any non-block tags.
 
