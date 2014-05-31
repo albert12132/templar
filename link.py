@@ -1,5 +1,7 @@
+import argparse
+import os
 import re
-from markdown import convert
+from markdown import Markdown
 import importlib
 try:
     import controller
@@ -17,14 +19,13 @@ def make_link_sub(cache):
     def link_sub(match):
         filename = match.group(1)
         block = match.group(2)
-        text, _ = retrieve_and_link(filename + '.md', cache)
+        text, _ = retrieve_and_link(filename, cache)
         if not block:
             block = 'all'
         return cache[filename + ':' + block]
     return link_sub
 
 def cache_blocks(filename, text, cache):
-    filename = filename.replace('.md', '')
     while block_re.search(text):
         for name, contents in block_re.findall(text):
             contents = cache_blocks(filename, contents, cache)
@@ -56,19 +57,51 @@ def scrape_toc(text):
 def link(filename):
     text, _ = retrieve_and_link(filename, {})
     cache = {}
-    text, variables = convert(text)
-    for k, v in variables.items():
+    converted = Markdown(text)
+    for k, v in converted.variables.items():
         cache[k] = v
     if controller:
-        text = apply_controller(text)
+        text = apply_controller(converted.text)
         for k, v in controller.configs.items():
             cache[k] = v
-        toc = scrape_toc(text)
+        toc = scrape_toc(converted.text)
         cache['table-of-contents'] = controller.toc(toc)
-    return cache_blocks('', text, cache), cache
+    return cache_blocks('', converted.text, cache), cache
+
+##########################
+# Command-line Interface #
+##########################
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('file', type=str,
+                        help="Link contents of file")
+    parser.add_argument('-d', '--destination', type=str,
+                        help="Store result in destination file")
+    parser.add_argument('-c', '--cache', action='store_true',
+                        help="Show cache keys")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.file):
+        print('File ' + args.file + ' does not exist.')
+        exit(1)
+    elif not os.path.isfile(args.file):
+        print(args.file + ' is not a valid file')
+        exit(1)
+    result, cache = link(args.file)
+    if args.destination:
+        with open(args.destination, 'w') as f:
+            f.write(result)
+        print('Result can be found in ' + args.destination)
+    else:
+        print('--- BEGIN RESULT ---')
+        print(result)
+        print('--- END RESULT ---')
+    if args.cache:
+        print('--- Cache keys ---')
+        for k in sorted(cache):
+            print(k)
 
 if __name__ == '__main__':
-    import sys
-    text, cache = link(sys.argv[1])
-    print(text)
+    main()
 

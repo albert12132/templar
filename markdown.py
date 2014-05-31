@@ -13,9 +13,13 @@ def convert(text):
     return Markdown(text).text
 
 class Markdown:
-    def __init__(self, text):
+    def __init__(self, text, pre_hook=None, post_hook=None):
+        if pre_hook:
+            text = pre_hook(text)
         self.text, self.variables, self.references = preprocess(text)
         self.text = self.convert(self.text).strip()
+        if post_hook:
+            self.text = post_hook(self.text)
 
     def convert(self, text):
         text, hashes = apply_hashes(text, self)
@@ -50,8 +54,6 @@ class Markdown:
         return self.text
 
 
-
-
 ##################
 # Pre-Processing #
 ##################
@@ -65,8 +67,8 @@ def preprocess(text):
 TAB_SIZE = 4
 
 re_retab = re.compile(r"""
-([^\t]*?)   # \1 is string before the tab(s)
-(\t+)       # \2 is consecutive string of tabs
+    ([^\t]*?)   # \1 is string before the tab(s)
+    (\t+)       # \2 is consecutive string of tabs
 """, re.M)
 def sub_retab(match):
     r"""Remove all tabs and convert them into spaces.
@@ -101,11 +103,11 @@ def handle_whitespace(text):
     return text
 
 re_vars = re.compile(r"""
-(?:\n|\A)   # beginning of line or string
-~[ \t]+     # ~ followed by at least one space
-(.*?)       # \1 is variable name
-:[ \t]*     # variable name followed by colon and spaces
-(.*?)$      # \2 is value
+    (?:\n|\A)   # beginning of line or string
+    ~[ \t]+     # ~ followed by at least one space
+    (.*?)       # \1 is variable name
+    :[ \t]*     # variable name followed by colon and spaces
+    (.*?)$      # \2 is value
 """, re.X | re.M | re.S)
 def get_variables(text):
     """Extracts variables that can be used in templating engines.
@@ -127,19 +129,19 @@ def get_variables(text):
     return text, variables
 
 re_references = re.compile(r"""
-\n[ ]{0,3}              # up to three spaces
-\[
-    ([^\n]+?)           # \1 is reference id
-\]:                     # square brackets followed immediately by colon
-[ ]+
-(.+?)                   # \2 is URL
-\s
-(?:                     # captures title
-    [ \t]*\n?[ \t]*     # can only contain one newline
-    (["'])              # \3 is style of quote
-    (.*?)               # \4 is title
-    \3                  # closing quote
-)?                      # title is optional)
+    \n[ ]{0,3}              # up to three spaces
+    \[
+        ([^\n]+?)           # \1 is reference id
+    \]:                     # brackets followed immediately by colon
+    [ ]+
+    (.+?)                   # \2 is URL
+    \s
+    (?:                     # captures title
+        [ \t]*\n?[ \t]*     # can only contain one newline
+        (["'])              # \3 is style of quote
+        (.*?)               # \4 is title
+        \3                  # closing quote
+    )?                      # title is optional)
 """, re.X | re.S)
 def get_references(text):
     """Retrieves all link references within the text.
@@ -189,21 +191,20 @@ SALT = bytes(randint(0, 1000000))
 def hash_text(s, label):
     return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest() + '-' + label
 
-
 block_tags = "blockquote|div|form|hr|noscript|ol|p|pre|table"
 re_block = re.compile(r"""
-(?:(?<=\n)|(?<=\A))     # begin with newline or start of string
-<
-    \s*
-    (%s)                # \1 is block_tags
-    (?:\s+.*?)          # any attributes
->
-.*?                     # contents in block element
-\n<                     # close must start at front of newline
-    \s*/\s*
-    \1                  # matching close tag
-    \s*
->
+    (?:(?<=\n)|(?<=\A))     # begin with newline or start of string
+    <
+        \s*
+        (%s)                # \1 is block_tags
+        (?:\s+.*?)          # any attributes
+    >
+    .*?                     # contents in block element
+    \n<                     # close must start at front of newline
+        \s*/\s*
+        \1                  # matching close tag
+        \s*
+    >
 """ % block_tags, re.S | re.X)
 def hash_blocks(text, hashes):
     """Hashes HTML block tags.
@@ -225,19 +226,19 @@ def hash_blocks(text, hashes):
     return re_block.sub(sub, text)
 
 re_list = r"""
-(?:(?<=\n)|(?<=\A)) # newline or start of string
-(?:
-    [ ]{0,3}                # up to three spaces
-    %s                      # list marker
-    (?!\ %s\ )              # * * * is not a valid list
-    [ ]                     # must have at least one space
-    .+?                     # list item
-    \n*                     # capture trailing newlines
-    (?=                     # end of a list item
-        \n\n(?![ ]{4}) |    # blank line without 4 spaces after
-        \Z                  # end of string
-    )
-)+                          # capture multiple list items
+    (?:(?<=\n)|(?<=\A))         # newline or start of string
+    (?:
+        [ ]{0,3}                # up to three spaces
+        %s                      # list marker
+        (?!\ %s\ )              # * * * is not a valid list
+        [ ]                     # must have at least one space
+        .+?                     # list item
+        \n*                     # capture trailing newlines
+        (?=                     # end of a list item
+            \n\n(?![ ]{4}) |    # blank line without 4 spaces after
+            \Z                  # end of string
+        )
+    )+                          # capture multiple list items
 """
 def hash_lists(text, hashes, markdown_obj):
     """Hashes ordered and unordered lists.
@@ -287,12 +288,12 @@ def hash_lists(text, hashes, markdown_obj):
     return text
 
 re_codeblock = re.compile(r"""
-(?:(?<=\n)|(?<=\A))     # newline or start of string
-(?:
-    [ ]{4}              # at least four spaces
-    .+?                 # contents of line
-    (?:\n+|\Z)          # ends with 1+ newlines or end of string
-)+
+    (?:(?<=\n)|(?<=\A))     # newline or start of string
+    (?:
+        [ ]{4}              # at least four spaces
+        .+?                 # contents of line
+        (?:\n+|\Z)          # ends with 1+ newlines or end of string
+    )+
 """, re.S | re.X)
 def hash_codeblocks(text, hashes):
     """Hashes codeblocks (<pre> elements).
@@ -323,10 +324,10 @@ def hash_codeblocks(text, hashes):
     return re_codeblock.sub(sub, text)
 
 re_blockquote = re.compile(r"""
-(?:(?<=\n)|(?<=\A))     # newline or start of string
-(?:
-    >[ ].*?\n*(?:\n\n|\Z)
-)+
+    (?:(?<=\n)|(?<=\A))         # newline or start of string
+    (?:
+        >[ ].*?\n*(?:\n\n|\Z)   # blockquote section
+    )+
 """, re.S | re.X)
 def hash_blockquotes(text, hashes, markdown_obj):
     """Hashes block quotes.
@@ -351,12 +352,12 @@ def hash_blockquotes(text, hashes, markdown_obj):
     return re_blockquote.sub(sub, text)
 
 re_code = re.compile(r"""
-(?<!\\)     # avoid escaped ticks
-(`+)        # \1 is opening ticks (could be multiple ticks)
-[ ]?        # leading space is optional
-(.*?)       # \2 is code content
-[ ]?        # closing space is optional
-\1          # match closing ticks
+    (?<!\\)     # avoid escaped ticks
+    (`+)        # \1 is opening ticks (could be multiple ticks)
+    [ ]?        # leading space is optional
+    (.*?)       # \2 is code content
+    [ ]?        # closing space is optional
+    \1          # match closing ticks
 """, re.S | re.X)
 def hash_codes(text, hashes):
     """Hashes inline code tags.
@@ -376,20 +377,20 @@ def hash_codes(text, hashes):
     return re_code.sub(sub, text)
 
 re_inline_link = re.compile(r"""
-(?<!\\)         # avoid escapes
-(!?)            # \1 is whether or not this is an img
-\[(.*?)\]       # \2 is <a> text or <img> alt text
-\(              # captures link
-    \s*
-    (.*?)       # \3 is link
-    (           # \4 is the title
-        \s+
-        (["'])  # \5 is quote type of title
-        .+?     # title
-        \5      # closing quote
-    )?          # title is optional
-    \s*
-\)
+    (?<!\\)         # avoid escapes
+    (!?)            # \1 is whether or not this is an img
+    \[(.*?)\]       # \2 is <a> text or <img> alt text
+    \(              # captures link
+        \s*
+        (.*?)       # \3 is link
+        (           # \4 is the title
+            \s+
+            (["'])  # \5 is quote type of title
+            .+?     # title
+            \5      # closing quote
+        )?          # title is optional
+        \s*
+    \)
 """, re.X | re.S)
 def hash_inline_links(text, hashes):
     """Hashes an <a> link or an <img> link.
@@ -422,12 +423,12 @@ def hash_inline_links(text, hashes):
     return re_inline_link.sub(sub, text)
 
 re_reference_link = re.compile(r"""
-(?<!\\)     # avoid escapes
-(!?)        # \1 is whether or not link is an <img>
-\[(.*?)\]   # \2 is link text or img alt text
-\[
-    (.*?)   # \3 is reference id
-\]
+    (?<!\\)     # avoid escapes
+    (!?)        # \1 is whether or not link is an <img>
+    \[(.*?)\]   # \2 is link text or img alt text
+    \[
+        (.*?)   # \3 is reference id
+    \]
 """, re.X | re.S)
 def hash_reference_links(text, hashes, markdown_obj):
     """Hashes an <a> link or an <img> link.
@@ -487,17 +488,17 @@ def hash_tags(text, hashes):
     return re_tag.sub(sub, text)
 
 re_hash = re.compile(r"""
-(                   # \1 is hash type
-    blockquote  |
-    block       |
-    code        |
-    link        |
-    tag         |
-    list        |
-    pre
-)
--[\da-f]+-          # hash
-\1                  # closing hash type
+    (                   # \1 is hash type
+        blockquote  |
+        block       |
+        code        |
+        link        |
+        tag         |
+        list        |
+        pre
+    )
+    -[\da-f]+-          # hash
+    \1                  # closing hash type
 """, re.X)
 re_pre_tag = re.compile(r"""
 ([ ]*)  # \1 is leading whitespace
@@ -534,23 +535,23 @@ def apply_substitutions(text):
     return text
 
 hr_re = re.compile(r"""
-\n\n                    # leading blank line
-(
-    (?:\*[ ]?){3,}  |   # either * * * (spaces optional)
-    (?:-[ ]?){3,}       # or - - - (spaces optional)
-)
-\n\n                    # trailing blank line
+    \n\n                    # leading blank line
+    (
+        (?:\*[ ]?){3,}  |   # either * * * (spaces optional)
+        (?:-[ ]?){3,}       # or - - - (spaces optional)
+    )
+    \n\n                    # trailing blank line
 """, re.X | re.S)
 def hr_sub(match):
     """Matches a horizontal rule."""
     return '\n\n<hr/>\n\n'
 
 emphasis_re = re.compile(r"""
-(?<!\\)             # avoid escapes
-(\*{1,3}|_{1,3})    # \1 is the emphasis marker
-(?!\s+)             # emphasis cannot contain leading whitespace
-(.*?)               # \2 contents
-\1                  # closing emphasis
+    (?<!\\)             # avoid escapes
+    (\*{1,3}|_{1,3})    # \1 is the emphasis marker
+    (?!\s+)             # emphasis cannot contain leading whitespace
+    (.*?)               # \2 contents
+    \1                  # closing emphasis
 """, re.S | re.X)
 def emphasis_sub(match):
     """Substitutes <strong>, <em>, and <strong><em> tags."""
@@ -569,32 +570,33 @@ def auto_escape_sub(match):
     return html.escape(match.group(0))
 
 escape_re = re.compile(r"""
-\\(         # escapes are preceded by a backslash
-    \*  |
-    `   |
-    _   |
-    \{  |
-    \}  |
-    \[  |
-    \]  |
-    \(  |
-    \)  |
-    #   |
-    \+  |
-    -   |
-    \.  |
-    !
-)""", re.X)
+    \\(         # escapes are preceded by a backslash
+        \*  |
+        `   |
+        _   |
+        \{  |
+        \}  |
+        \[  |
+        \]  |
+        \(  |
+        \)  |
+        #   |
+        \+  |
+        -   |
+        \.  |
+        !
+    )
+""", re.X)
 def escapes_sub(match):
     """Substitutes escaped characters."""
     return match.group(1)
 
 atx_header_re = re.compile(r"""
-^(#{1,6})   # \1 is leading #s
-\s*
-(.*?)       # \2 is header title
-\s*
-#*$         # Trailing #s for aesthetics (doesn't have to match)
+    ^(#{1,6})   # \1 is leading #s
+    \s*
+    (.*?)       # \2 is header title
+    \s*
+    #*$         # Trailing #s for aesthetics (doesn't have to match)
 """, re.M)
 def atx_header_sub(match):
     """Substitutes atx headers (headers defined using #'s)."""
@@ -603,11 +605,11 @@ def atx_header_sub(match):
     return '<h{0}>{1}</h{0}>'.format(level, title)
 
 setext_header_re = re.compile(r"""
-(?:(?<=\n)|(?<=\A))     # begin at newline
-(.*?)                   # \1 is header title
-\n
-(=+|-+)                 # \2 is header underline style
-(?=\n|\Z)               # must be followed by newline
+    (?:(?<=\n)|(?<=\A))     # begin at newline
+    (.*?)                   # \1 is header title
+    \n
+    (=+|-+)                 # \2 is header underline style
+    (?=\n|\Z)               # must be followed by newline
 """, re.X)
 def setext_header_sub(match):
     """Substitutes setext headers (defined with underscores)."""
@@ -619,11 +621,11 @@ avoids = """
     (?:(?P<hash>blockquote|block|tag|pre|list)-[\da-f]+-(?P=hash))|<h(?P<level>[1-6])>.*?</h(?P=level)>|<hr/>
 """
 paragraph_re = re.compile(r"""
-(?:(?<=\n\n)|(?<=\A))   # begin at newline
-(?!\n)                  # but don't include newlines in the paragraph
-(?!%s)                  # avoid certain strings
-(.+?)                   # \1 is paragraph contents
-(?:(?=\n\n)|(?=\n*\Z))  # end with blank line or end of string
+    (?:(?<=\n\n)|(?<=\A))   # begin at newline
+    (?!\n)                  # but don't include newlines in paragraph
+    (?!%s)                  # avoid certain strings
+    (.+?)                   # \1 is paragraph contents
+    (?:(?=\n\n)|(?=\n*\Z))  # end with blank line or end of string
 """ % avoids, re.S | re.X)
 def paragraph_sub(match):
     """Captures paragraphs."""
@@ -638,19 +640,19 @@ def postprocess(text):
     return text
 
 slug_re = re.compile(r"""
-<
+    <
+        \s*
+        ([0-6])     # \1 is the opening header level
+        \s*
+    >
     \s*
-    ([0-6])     # \1 is the opening header level
+    (.*?)           # \2 is the header title
     \s*
->
-\s*
-(.*?)           # \2 is the header title
-\s*
-<
-    \s*/\s*
-    \1          # closing header level
-    \s*
->
+    <
+        \s*/\s*
+        \1          # closing header level
+        \s*
+    >
 """, re.X)
 def slug_sub(match):
     """Assigns id-less headers a slug that is derived from their
