@@ -93,7 +93,7 @@ def scrape_headers(text, regex, translate):
                will appear in the order that the original headers
                are placed within text
     """
-    # TODO
+    return [translate(match) for match in re.findall(regex, text)]
 
 def substitutions(text, subs):
     """Apply regular expression substitutions defined for custom
@@ -112,7 +112,9 @@ def substitutions(text, subs):
     RETURNS:
     text -- str; the text after applying all substitutions in subs
     """
-    # TODO
+    for regex, sub in subs:
+        text = re.sub(regex, sub, text)
+    return text
 
 
 def postprocess(text):
