@@ -88,11 +88,9 @@ The `<block>` tag allows you to name a certain section of Markdown:
     Some Markdown out here
 
     <block example>
-
     Example
     -------
     This Markdown is within the block.
-
     </block example>
 
 The opening `block` tag consists of triangular braces, `< >`, the word
@@ -111,7 +109,6 @@ inside of each other:
     </block inner>
 
     But this stuff would only be included in the outer block.
-
     </block outer>
 
 Block names must be unique within a single file.

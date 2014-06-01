@@ -1,16 +1,23 @@
 TODO
 ====
 
-* allow for multiple controllers
+Main
+----
+
 * better path configuration for finding config.py
-* define a better interface for controller.py
-* refactor and add documentation
-* add ability to link and compile non markdown/html files (e.g. python
-  source)
-* add tests/testing framework
 
 Markdown
 --------
 
 * add html block tags
+* refactor and document
 
+Link
+----
+
+* refactor and document
+
+Testing
+-------
+
+* add tests/testing framework (using unittest)
