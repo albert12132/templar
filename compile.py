@@ -17,6 +17,31 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from config import TEMPLATE_DIRS, BASE_PATH, CONFIGS
 
+##############
+# Public API #
+##############
+
+def compile(template_path, src_path):
+    # process template inheritance first
+    templates = get_all_templates(template_path, [])
+    templates.reverse()
+    template = compile_inheritance(templates)
+
+    attrs = parse_content(src_path)
+
+    while expr_re.search(template):
+        for tag in expr_re.findall(template):
+            if tag in attrs:
+                val = attrs[tag]
+            else:
+                try:
+                    val = eval(tag, attrs)
+                except:
+                    val = ''
+            template = re.sub('\{\{\s.+?\s\}\}', str(val), template,
+                              count=1)
+    return template
+
 ##################
 # REGEX PATTERNS #
 ##################
@@ -197,30 +222,7 @@ def compile_inheritance(templates):
     templates.append(super_temp)
     return compile_inheritance(templates)
 
-
-def compile(templates, attrs):
-    # process template inheritance first
-    templates.reverse()
-    template = compile_inheritance(templates)
-
-    while expr_re.search(template):
-        for tag in expr_re.findall(template):
-            if tag in attrs:
-                val = attrs[tag]
-            else:
-                try:
-                    val = eval(tag, attrs)
-                except:
-                    val = ''
-            template = re.sub('\{\{\s.+?\s\}\}', str(val), template,
-                              count=1)
-    return template
-
-##########################
-# COMMAND LINE UTILITIES #
-##########################
-
-def parse_content(filename):
+def get_attrs(filename):
     """Retrieves variable bindings from CONTENT.
 
     PARAMETERS:
@@ -229,12 +231,19 @@ def parse_content(filename):
     if not content:
         attrs = {}
     else:
-            attrs = link.retrieve_blocks(text)
+        with open(filename, 'r') as f:
+            text = link.link(f.read())
+        attrs = link.retrieve_blocks(text)
     # TODO scrape headers
     # TODO Configs
     # for k, v in CONFIGS.items():
     #     attrs[k] = v
     return attrs
+
+
+##########################
+# COMMAND LINE UTILITIES #
+##########################
 
 
 def main():
@@ -246,9 +255,8 @@ def main():
                         help='The destination filepath')
     args = parser.parse_args()
 
-    templates = get_all_templates(args.template, [])
-    tag_names = parse_content(args.source)
-    result = compile(templates, tag_names)
+    result = compile(args.template, args.source)
+
     if not args.destination:
         print(result)
         return
