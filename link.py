@@ -1,8 +1,8 @@
 import argparse
 import os
 import re
-from markdown import Markdown
-import importlib
+
+# TODO
 try:
     import controller
 except ImportError:
@@ -68,6 +68,27 @@ def retrieve_blocks(text):
     cache = {}
     return cache_blocks('', text, cache), cache
 
+def substitutions(text, subs):
+    """Apply regular expression substitutions defined for custom
+    patterns.
+
+    PARAMETERS:
+    text -- str; original source text
+    subs -- list of 2-tuples (regex, sub); regex is either a str or a
+            RegexObject, which defines the pattern. sub is a
+            substitution function, as used by re.sub
+
+    The (regex, sub) pairs will be applied in the order that they
+    appear in subs. This means it is the responsibility of the caller
+    of this function to select a proper ordering of substitutions.
+
+    RETURNS:
+    text -- str; the text after applying all substitutions in subs
+    """
+    for regex, sub in subs:
+        text = re.sub(regex, sub, text)
+    return text
+
 def scrape_headers(text, regex, translate):
     """Scrape headers based on a regular expression and substitution.
 
@@ -95,57 +116,6 @@ def scrape_headers(text, regex, translate):
     """
     return [translate(match) for match in re.findall(regex, text)]
 
-def substitutions(text, subs):
-    """Apply regular expression substitutions defined for custom
-    patterns.
-
-    PARAMETERS:
-    text -- str; original source text
-    subs -- list of 2-tuples (regex, sub); regex is either a str or a
-            RegexObject, which defines the pattern. sub is a
-            substitution function, as used by re.sub
-
-    The (regex, sub) pairs will be applied in the order that they
-    appear in subs. This means it is the responsibility of the caller
-    of this function to select a proper ordering of substitutions.
-
-    RETURNS:
-    text -- str; the text after applying all substitutions in subs
-    """
-    for regex, sub in subs:
-        text = re.sub(regex, sub, text)
-    return text
-
-
-def postprocess(text):
-    cache = {}
-    converted = Markdown(text, pre_hook=link)
-    for k, v in converted.variables.items():
-        cache[k] = v
-    if controller:
-        text = apply_controller(converted.text)
-        for k, v in controller.configs.items():
-            cache[k] = v
-        toc = scrape_toc(converted.text)
-        cache['table-of-contents'] = controller.toc(toc)
-    return cache_blocks('', converted.text, cache), cache
-
-# Markdown(text, pre_hook=link)
-
-def link_markdown(text):
-    cache = {}
-    converted = Markdown(text, pre_hook=link)
-    for k, v in converted.variables.items():
-        cache[k] = v
-    if controller:
-        text = apply_controller(converted.text)
-        for k, v in controller.configs.items():
-            cache[k] = v
-        toc = scrape_toc(converted.text)
-        cache['table-of-contents'] = controller.toc(toc)
-    return cache_blocks('', converted.text, cache), cache
-
-
 ##########
 # Linker #
 ##########
@@ -161,13 +131,15 @@ re_include = re.compile(r"""
         )?          # optional
     \s*>
 """, re.X)
-def substitute_links(text, cache):
+def substitute_links(text, cache, base_dir):
     """Create a function that acts as a substitution function for the
     include-tag regex.
     """
     def link_sub(match):
         filename = match.group(1)
         regex = match.group(2)
+        if not os.path.exists(filename):
+            filename = os.path.join(base_dir, filename)
         text = retrieve_and_link(filename, cache)
         if not regex:
             return cache[filename + ':all']
@@ -179,7 +151,7 @@ def substitute_links(text, cache):
 def retrieve_and_link(filename, cache):
     with open(filename, 'r') as f:
         text = f.read()
-    text = substitute_links(text, cache)
+    text = substitute_links(text, cache, os.path.dirname(filename))
     cache_blocks(filename, text, cache)
     return text
 
@@ -209,19 +181,6 @@ def cache_blocks(filename, text, cache):
         text = re_block.sub(lambda m: m.group(2), text)
     cache[filename + ':all'] = text
     return text
-
-def apply_controller(text):
-    for regex, sub in controller.regexes:
-        text = regex.sub(sub, text)
-    return text
-
-header_re = re.compile(r"""
-<\s*h([1-6])(?:.*?id=(['"])(.*?)\2.*?)?>
-(.*?)
-<\s*/\s*h\1\s*>
-""", re.X)
-def scrape_toc(text):
-    return [(h[0], h[2], h[3]) for h in header_re.findall(text)]
 
 
 ##########################
