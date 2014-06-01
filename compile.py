@@ -31,7 +31,7 @@ sub_tag_re = re.compile('\{%\s*(.+?)\s*%\}')
 expr_re = re.compile('\{{2}\s*(.+?)\s*\}{2}')
 
 #####################
-# TEMPLATE RERIEVAL #
+# TEMPLATE RETRIEVAL #
 #####################
 
 def get_template(filename):
@@ -198,12 +198,10 @@ def compile_inheritance(templates):
     return compile_inheritance(templates)
 
 
-def compile(templates, attrs, dest):
+def compile(templates, attrs):
     # process template inheritance first
     templates.reverse()
     template = compile_inheritance(templates)
-    for k, v in CONFIGS.items():
-        attrs[k] = v
 
     while expr_re.search(template):
         for tag in expr_re.findall(template):
@@ -216,28 +214,27 @@ def compile(templates, attrs, dest):
                     val = ''
             template = re.sub('\{\{\s.+?\s\}\}', str(val), template,
                               count=1)
-    if not dest:
-        print(template)
-        return
-    with open(dest, 'w') as f:
-        f.write(template)
-        print('Finished compiling')
-        print('Result can be found at ' + dest)
+    return template
 
 ##########################
 # COMMAND LINE UTILITIES #
 ##########################
 
-
-def parse_content(content):
+def parse_content(filename):
     """Retrieves variable bindings from CONTENT.
 
     PARAMETERS:
     content -- the name of a Markdown file
     """
     if not content:
-        return {}
-    return link.link(content)[1]
+        attrs = {}
+    else:
+            attrs = link.retrieve_blocks(text)
+    # TODO scrape headers
+    # TODO Configs
+    # for k, v in CONFIGS.items():
+    #     attrs[k] = v
+    return attrs
 
 
 def main():
@@ -251,7 +248,14 @@ def main():
 
     templates = get_all_templates(args.template, [])
     tag_names = parse_content(args.source)
-    compile(templates, tag_names, args.destination)
+    result = compile(templates, tag_names)
+    if not args.destination:
+        print(result)
+        return
+    with open(args.destination, 'w') as f:
+        f.write(result)
+        print('Finished compiling')
+        print('Result can be found at ' + args.destination)
 
 if __name__ == '__main__':
     main()
