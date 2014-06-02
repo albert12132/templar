@@ -9,7 +9,7 @@ FILEPATH = os.path.dirname(os.path.abspath(__file__))
 #################
 
 # Substitutions for the linker
-substitutions = [
+SUBSTITUTIONS = [
     # Add substitutinos of the form
     # (regex, sub_function),
 ]
@@ -25,14 +25,14 @@ substitutions = [
 #############
 
 # List of directories in which to search for templates
-template_dirs = [
+TEMPLATE_DIRS = [
     FILEPATH,
     # Add directories that contain templates
     # os.path.join(FILEPATH, 'example'),
 ]
 
 # Variables that can be used in templates
-variables = {
+VARIABLES = {
     # Add variables here, like the following
     # 'example': 'something here',
 }
