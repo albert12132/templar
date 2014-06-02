@@ -13,21 +13,16 @@ import argparse
 import os
 import link
 
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from config import TEMPLATE_DIRS, BASE_PATH, CONFIGS
 
 ##############
 # Public API #
 ##############
 
-def compile(template_path, src_path):
+def compile(template_path, attrs):
     # process template inheritance first
     templates = get_all_templates(template_path, [])
     templates.reverse()
     template = compile_inheritance(templates)
-
-    attrs = parse_content(src_path)
 
     while expr_re.search(template):
         for tag in expr_re.findall(template):
@@ -228,7 +223,7 @@ def get_attrs(filename):
     PARAMETERS:
     content -- the name of a Markdown file
     """
-    if not content:
+    if not filename:
         attrs = {}
     else:
         with open(filename, 'r') as f:
@@ -245,18 +240,17 @@ def get_attrs(filename):
 # COMMAND LINE UTILITIES #
 ##########################
 
-
-def main():
-    parser = argparse.ArgumentParser()
+def cmd_options(parser):
     parser.add_argument('template', help="The template's filename")
-    parser.add_argument('-s', '--source', type=str, default=None,
+    parser.add_argument('-f', '--file', type=str, default=None,
                         help="A Markdown file with content.")
     parser.add_argument('-d', '--destination', type=str, default=None,
                         help='The destination filepath')
-    args = parser.parse_args()
+    parser.add_argument('-m', '--markdown', action='store_true',
+                        help='Use Markdown conversion on source')
 
-    result = compile(args.template, args.source)
-
+def main(args):
+    result = compile(args.template, {})
     if not args.destination:
         print(result)
         return
@@ -266,4 +260,6 @@ def main():
         print('Result can be found at ' + args.destination)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    cmd_options(parser)
+    main(parser.parse_args())
