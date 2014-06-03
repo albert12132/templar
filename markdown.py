@@ -642,7 +642,7 @@ def postprocess(text):
 slug_re = re.compile(r"""
     <
         \s*
-        ([0-6])     # \1 is the opening header level
+        (h[0-6])     # \1 is the opening header level
         \s*
     >
     \s*
