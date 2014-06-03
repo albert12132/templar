@@ -592,12 +592,12 @@ def escapes_sub(match):
     return match.group(1)
 
 atx_header_re = re.compile(r"""
-    ^(#{1,6})   # \1 is leading #s
+    ^(\#{1,6})  # \1 is leading #s
     \s*
     (.*?)       # \2 is header title
     \s*
-    #*$         # Trailing #s for aesthetics (doesn't have to match)
-""", re.M)
+    \#*$        # Trailing #s for aesthetics (doesn't have to match)
+""", re.M | re.X)
 def atx_header_sub(match):
     """Substitutes atx headers (headers defined using #'s)."""
     level = len(match.group(1))
@@ -662,6 +662,7 @@ def slug_sub(match):
     level = match.group(1)
     title = match.group(2)
     slug = title.lower()
+    slug = re.sub(r'[ \t]+', ' ', slug)
     slug = slug.replace(' ', '-')
     slug = re.sub(r'<.+?>|[^\w-]', '', slug)
     return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
