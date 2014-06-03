@@ -1,6 +1,9 @@
 import os
 import unittest
 
+import sys
+sys.path.insert(0, '..')
+
 class TemplarTest(unittest.TestCase):
     def setUp(self):
         pass
@@ -15,3 +18,6 @@ class TemplarTest(unittest.TestCase):
             print('No file', filename, 'found in', path)
         with open(os.path.join(path, filename), 'r') as f:
             return f.read()
+
+def main():
+    unittest.main()
