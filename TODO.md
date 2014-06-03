@@ -12,6 +12,11 @@ Markdown
 * add html block tags
 * refactor and document
 
+### Bugs
+
+* Headers erroneously being included in paragraphs if no newlines
+  separating
+
 Link
 ----
 
