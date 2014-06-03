@@ -642,7 +642,7 @@ def postprocess(text):
 slug_re = re.compile(r"""
     <
         \s*
-        ([0-6])     # \1 is the opening header level
+        (h[0-6])     # \1 is the opening header level
         \s*
     >
     \s*
@@ -670,14 +670,15 @@ def slug_sub(match):
 # Command-line Interface #
 ##########################
 
-def main():
-    parser = argparse.ArgumentParser()
+def cmd_options(parser):
     parser.add_argument('-f', '--file', type=str,
                         help="Convert contents of Markdown file")
     parser.add_argument('-d', '--destination', type=str,
                         help="Store result in destination file")
-    args = parser.parse_args()
+    parser.add_argument('-m', '--markdown', action='store_true',
+                        help='Use Markdown conversion on source')
 
+def main(args, configs):
     if not args.file:
         text = ''
         print('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')
@@ -708,4 +709,6 @@ def main():
         print(result)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    cmd_options(parser)
+    main(parser.parse_args())

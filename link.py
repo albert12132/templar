@@ -1,12 +1,7 @@
 import argparse
 import os
 import re
-
-# TODO
-try:
-    import controller
-except ImportError:
-    controller = None
+from markdown import convert
 
 ##############
 # Public API #
@@ -54,7 +49,7 @@ def link(text):
     text -- str; the text after resolving all include tags. Any block
             tags that are left over are preserved in text.
     """
-    return substitute_links(text, {})
+    return substitute_links(text, {}, '')
 
 def retrieve_blocks(text):
     """Strip block tags from text and return a mapping of block
@@ -187,29 +182,32 @@ def cache_blocks(filename, text, cache):
 # Command-line Interface #
 ##########################
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('file', type=str,
-                        help="Link contents of file")
+def cmd_options(parser):
+    parser.add_argument('source', type=str,
+                        help="Link contents of source file")
     parser.add_argument('-d', '--destination', type=str,
                         help="Store result in destination file")
-    parser.add_argument('-c', '--cache', action='store_true',
-                        help="Show cache keys")
-    args = parser.parse_args()
+    parser.add_argument('-m', '--markdown', action='store_true',
+                        help="Use Markdown conversion")
 
-    if not os.path.exists(args.file):
-        print('File ' + args.file + ' does not exist.')
+def main(args, configs):
+    if not os.path.exists(args.source):
+        print('File ' + args.source + ' does not exist.')
         exit(1)
-    elif not os.path.isfile(args.file):
-        print(args.file + ' is not a valid file')
+    elif not os.path.isfile(args.source):
+        print(args.source + ' is not a valid file')
         exit(1)
-    with open(args.file, 'r') as f:
+    with open(args.source, 'r') as f:
         result = link(f.read())
-    if args.cache:
-        result, cache = retrieve_blocks(result)
-        print('--- Cache keys ---')
-        for k in sorted(cache):
-            print(k)
+    if args.markdown:
+        result = convert(result)
+    result = substitutions(result, configs.get('SUBSTITUTIONS', []))
+    result, cache = retrieve_blocks(result)
+    # if args.cache:
+    #     result, cache = retrieve_blocks(result)
+    #     print('--- Cache keys ---')
+    #     for k in sorted(cache):
+    #         print(k)
     if args.destination:
         with open(args.destination, 'w') as f:
             f.write(result)
@@ -220,5 +218,7 @@ def main():
         print('--- END RESULT ---')
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    cmd_options(parser)
+    main(parser.parse_args())
 
