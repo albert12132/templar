@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+from markdown import convert
 
 ##############
 # Public API #
@@ -48,7 +49,7 @@ def link(text):
     text -- str; the text after resolving all include tags. Any block
             tags that are left over are preserved in text.
     """
-    return substitute_links(text, {})
+    return substitute_links(text, {}, '')
 
 def retrieve_blocks(text):
     """Strip block tags from text and return a mapping of block
@@ -186,10 +187,10 @@ def cmd_options(parser):
                         help="Link contents of source file")
     parser.add_argument('-d', '--destination', type=str,
                         help="Store result in destination file")
-    parser.add_argument('-c', '--cache', action='store_true',
-                        help="Show cache keys")
+    parser.add_argument('-m', '--markdown', action='store_true',
+                        help="Use Markdown conversion")
 
-def main(args):
+def main(args, configs):
     if not os.path.exists(args.source):
         print('File ' + args.source + ' does not exist.')
         exit(1)
@@ -198,11 +199,15 @@ def main(args):
         exit(1)
     with open(args.source, 'r') as f:
         result = link(f.read())
-    if args.cache:
-        result, cache = retrieve_blocks(result)
-        print('--- Cache keys ---')
-        for k in sorted(cache):
-            print(k)
+    if args.markdown:
+        result = convert(result)
+    result = substitutions(result, configs.get('SUBSTITUTIONS', []))
+    result, cache = retrieve_blocks(result)
+    # if args.cache:
+    #     result, cache = retrieve_blocks(result)
+    #     print('--- Cache keys ---')
+    #     for k in sorted(cache):
+    #         print(k)
     if args.destination:
         with open(args.destination, 'w') as f:
             f.write(result)

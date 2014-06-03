@@ -678,7 +678,7 @@ def cmd_options(parser):
     parser.add_argument('-m', '--markdown', action='store_true',
                         help='Use Markdown conversion on source')
 
-def main(args):
+def main(args, configs):
     if not args.file:
         text = ''
         print('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')

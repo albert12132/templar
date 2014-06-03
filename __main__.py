@@ -16,6 +16,7 @@ def configure_path():
     while not templar.startswith(cwd):
         paths.append(cwd)
         cwd = os.path.dirname(cwd)
+    paths.append(cwd)
     import config
     for i in range(len(paths)):
         sys.path.insert(0, paths[-i-1])
@@ -59,7 +60,9 @@ def main():
     compile_parser.set_defaults(func=compile.main)
 
     args = parser.parse_args()
-    args.func(args)
+
+    configs = configure_path()
+    args.func(args, configs)
 
 if __name__ == '__main__':
     main()

@@ -12,6 +12,7 @@ import re
 import argparse
 import os
 import link
+from markdown import Markdown
 
 
 ##############
@@ -20,7 +21,7 @@ import link
 
 def compile(template_path, attrs):
     # process template inheritance first
-    templates = get_all_templates(template_path, [])
+    templates = get_all_templates(template_path, [], attrs['TEMPLATE_DIRS'])
     templates.reverse()
     template = compile_inheritance(templates)
 
@@ -54,7 +55,7 @@ expr_re = re.compile('\{{2}\s*(.+?)\s*\}{2}')
 # TEMPLATE RETRIEVAL #
 #####################
 
-def get_template(filename):
+def get_template(filename, template_dirs):
     """Return the contents of `filename` as a string.
 
     PARAMETERS:
@@ -78,11 +79,12 @@ def get_template(filename):
 
     If no such `filename` is found, the program exits with status 1.
     """
-    if ':' in filename:
-        app, filename = filename.split(':')
-        dirs = [os.path.join(BASE_PATH, app)]
-    else:
-        dirs = TEMPLATE_DIRS
+    # if ':' in filename:
+    #     app, filename = filename.split(':')
+    #     dirs = [os.path.join(BASE_PATH, app)]
+    # else:
+    #     dirs = TEMPLATE_DIRS
+    dirs = template_dirs
     for path in dirs:
         template = os.path.join(path, 'templates', filename)
         if os.path.exists(template):
@@ -95,7 +97,7 @@ def get_template(filename):
     exit(1)
 
 
-def get_all_templates(filename, templates):
+def get_all_templates(filename, templates, template_dirs):
     """Get all templates referenced in an inheritance hierarchy.
 
     PARAMETERS:
@@ -112,12 +114,12 @@ def get_all_templates(filename, templates):
     EXCEPTIONS:
     Exits with status 1 if improper inheritance syntax is encountered.
     """
-    contents = get_template(filename)
+    contents = get_template(filename, template_dirs)
     match = extend_tag_re.match(contents)
     if match:
         contents = contents[len(match.group(0)):]
         parent = match.group(1)
-        get_all_templates(parent, templates)
+        get_all_templates(parent, templates, template_dirs)
     templates.append(contents)
     return templates
 
@@ -242,15 +244,34 @@ def get_attrs(filename):
 
 def cmd_options(parser):
     parser.add_argument('template', help="The template's filename")
-    parser.add_argument('-f', '--file', type=str, default=None,
+    parser.add_argument('-s', '--source', type=str, default=None,
                         help="A Markdown file with content.")
     parser.add_argument('-d', '--destination', type=str, default=None,
                         help='The destination filepath')
     parser.add_argument('-m', '--markdown', action='store_true',
                         help='Use Markdown conversion on source')
 
-def main(args):
-    result = compile(args.template, {})
+def main(args, configs):
+    if args.source:
+        if not os.path.exists(args.source):
+            print('File ' + args.source + ' does not exist.')
+            exit(1)
+        elif not os.path.isfile(args.source):
+            print(args.source + ' is not a valid file')
+            exit(1)
+        with open(args.source, 'r') as f:
+            result = link.link(f.read())
+        if args.markdown:
+            markdown_obj = Markdown(result)
+            for k, v in markdown_obj.variables.items():
+                configs[k] = v
+            result = markdown_obj.text
+        result = link.substitutions(result, configs.get('SUBSTITUTIONS', []))
+        _, cache = link.retrieve_blocks(result)
+        for k, v in cache.items():
+            configs[k] = v
+
+    result = compile(args.template, configs)
     if not args.destination:
         print(result)
         return
