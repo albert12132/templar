@@ -43,6 +43,16 @@ class SetextH1Test(TemplarTest):
         notExpect = '<h1 id="hello-world">Hello World!</h1>'
         self.assertNotEqual(notExpect, convert(self.simple))
 
+    def testNoParagraph(self):
+        text = """
+This should be one paragraph
+Header here
+===========
+This should be another paragraph
+"""
+        expect = '<p>This should be one paragraph</p>\n<h1>Header here</h1>\n<p>This should be another paragraph</p>'
+        self.assertEqual(expect, convert(text))
+
 class SetextH2Test(TemplarTest):
     def setUp(self):
         super().setUp()
@@ -85,6 +95,16 @@ class SetextH2Test(TemplarTest):
         notExpect = '<h2 id="hello-world">Hello World!</h2>'
         self.assertNotEqual(notExpect, convert(self.simple))
 
+    def testNoParagraph(self):
+        text = """
+This should be one paragraph
+Header here
+-----------
+This should be another paragraph
+"""
+        expect = '<p>This should be one paragraph</p>\n<h2>Header here</h2>\n<p>This should be another paragraph</p>'
+        self.assertEqual(expect, convert(text))
+
 class AtxHeaders(TemplarTest):
     def setUp(self):
         super().setUp()
@@ -115,6 +135,17 @@ class AtxHeaders(TemplarTest):
 
         for i in range(1, 7):
             self.assertEqual(expect.format(i), convert('#'*i + title + '####'))
+
+    def testNoParagraph(self):
+        text = """
+This should be one paragraph
+### Header here
+This should be another paragraph
+"""
+        expect = '<p>This should be one paragraph</p>\n<h3>Header here</h3>\n<p>This should be another paragraph</p>'
+        self.assertEqual(expect, convert(text))
+
+
 
 class SlugTests(TemplarTest):
     def setUp(self):
