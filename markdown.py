@@ -383,11 +383,11 @@ re_inline_link = re.compile(r"""
     \(              # captures link
         \s*
         (.*?)       # \3 is link
-        (           # \4 is the title
+        (?:
             \s+
-            (["'])  # \5 is quote type of title
-            .+?     # title
-            \5      # closing quote
+            (["'])  # \4 is quote type of title
+            (.+?)   # \5 is the title
+            \4      # closing quote
         )?          # title is optional
         \s*
     \)
@@ -406,9 +406,9 @@ def hash_inline_links(text, hashes):
         is_img = match.group(1) != ''
         content = match.group(2)
         link = match.group(3)
-        title = match.group(4)
+        title = match.group(5)
         if title:
-            title = ' title={0}'.format(title.strip())
+            title = ' title="{0}"'.format(title.strip())
         else:
             title = ''
         if is_img:
