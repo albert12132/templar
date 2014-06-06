@@ -142,7 +142,7 @@ re_references = re.compile(r"""
         (.*?)               # \4 is title
         \3                  # closing quote
     )?                      # title is optional
-    (?:\n|\Z)
+    (?=\n|\Z)
 """, re.X | re.S)
 def get_references(text):
     """Retrieves all link references within the text.
