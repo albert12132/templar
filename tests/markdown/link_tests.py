@@ -155,13 +155,12 @@ class ReferenceTest(TemplarTest):
 
     def testIdNumbers(self):
         text = """
-        A [link text][id12] here, and [second link][id23] here
+        A [link text][id12] here
 
         [id12]: path/to/resource
-        [id23]: path/to/resource
         """
         expect = """
-        <p>A <a href="path/to/resource">link text</a> here, and <a href="path/to/resource">second link</a> here</p>
+        <p>A <a href="path/to/resource">link text</a> here</p>
         """
         self.assertMarkdown(text, expect)
 
@@ -205,6 +204,18 @@ class ReferenceTest(TemplarTest):
         """
         expect = """
         <p>A <img src="path/to/resource" alt="link here"> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testConsecutiveReferences(self):
+        text = """
+        A [link here][id] here, [second link][id1]
+
+        [id]: path/to/resource
+        [id1]: path/to/resource
+        """
+        expect = """
+        <p>A <a href="path/to/resource">link here</a> here, <a href="path/to/resource">second link</a></p>
         """
         self.assertMarkdown(text, expect)
 
