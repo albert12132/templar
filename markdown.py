@@ -129,19 +129,20 @@ def get_variables(text):
     return text, variables
 
 re_references = re.compile(r"""
-    \n[ ]{0,3}              # up to three spaces
+    (?:\n|\A)
+    [ ]{0,3}                # up to three spaces
     \[
         ([^\n]+?)           # \1 is reference id
     \]:                     # brackets followed immediately by colon
     [ ]+
     (.+?)                   # \2 is URL
-    \s
     (?:                     # captures title
         [ \t]*\n?[ \t]*     # can only contain one newline
         (["'])              # \3 is style of quote
         (.*?)               # \4 is title
         \3                  # closing quote
-    )?                      # title is optional)
+    )?                      # title is optional
+    (?:\n|\Z)
 """, re.X | re.S)
 def get_references(text):
     """Retrieves all link references within the text.
@@ -637,6 +638,7 @@ def paragraph_sub(match):
 
 def postprocess(text):
     text = slug_re.sub(slug_sub, text)
+    text = text.strip()
     return text
 
 slug_re = re.compile(r"""
