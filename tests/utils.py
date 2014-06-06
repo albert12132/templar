@@ -22,19 +22,30 @@ class TemplarTest(unittest.TestCase):
         with open(os.path.join(path, filename), 'r') as f:
             return f.read()
 
-    @staticmethod
-    def stripLeadingWhitespace(text):
+    def stripLeadingWhitespace(self, text):
         text = text.strip('\n')
         length = len(re.match('\s*', text).group(0))
         return '\n'.join(line[length:]
                          for line in text.split('\n')
                          if line.strip())
 
+    def ignoreWhitespace(self, text):
+        text = self.stripLeadingWhitespace(text)
+        return re.sub('\s+', '', text, flags=re.S)
+
     def assertMarkdown(self, markdown, output):
         markdown = self.stripLeadingWhitespace(markdown)
         output = self.stripLeadingWhitespace(output)
         try:
             self.assertEqual(output, convert(markdown))
+        except AssertionError:
+            raise
+
+    def assertMarkdownIgnoreWS(self, markdown, output):
+        markdown = self.stripLeadingWhitespace(markdown)
+        try:
+            self.assertEqual(self.ignoreWhitespace(output),
+                             self.ignoreWhitespace(convert(markdown)))
         except AssertionError:
             raise
 
