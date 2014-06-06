@@ -233,5 +233,29 @@ class BlockquoteTest(TemplarTest):
         """
         self.assertMarkdownIgnoreWS(text, expect)
 
+    def testSeparated(self):
+        text = """
+        > Some text
+        > here
+
+        Not in blockquote
+
+        > Some more text
+        """
+        expect = """
+        <blockquote>
+        <p>Some text
+        here</p>
+        </blockquote>
+
+        <p>Not in blockquote</p>
+
+        <blockquote>
+        <p>Some more text</p>
+        </blockquote>
+        """
+        self.assertMarkdownIgnoreWS(text, expect)
+
+
 if __name__ == '__main__':
     main()
