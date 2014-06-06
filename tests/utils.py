@@ -26,7 +26,9 @@ class TemplarTest(unittest.TestCase):
     def stripLeadingWhitespace(text):
         text = text.strip('\n')
         length = len(re.match('\s*', text).group(0))
-        return '\n'.join(line[length:] for line in text.split('\n'))
+        return '\n'.join(line[length:]
+                         for line in text.split('\n')
+                         if line.strip())
 
     def assertMarkdown(self, markdown, output):
         markdown = self.stripLeadingWhitespace(markdown)

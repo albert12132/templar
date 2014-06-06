@@ -94,5 +94,121 @@ class ImageTest(TemplarTest):
         expect = '<p><img src="path/to/url" alt="link here" title="title here"></p>'
         self.assertMarkdown(text, expect)
 
+class ReferenceTest(TemplarTest):
+    def testRemoval(self):
+        text = "[id]: path/to/resource"
+        expect = ''
+        self.assertMarkdown(text, expect)
+
+    def testBasic(self):
+        text = """
+        A [link text][id] here
+
+        [id]: path/to/resource
+        """
+        expect = """
+        <p>A <a href="path/to/resource">link text</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        [id]: path/to/resource
+
+        A [link text][id] here
+        """
+        expect = """
+        <p>A <a href="path/to/resource">link text</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testIdCaseInsensitive(self):
+        text = """
+        A [link text][Id] here
+
+        [id]: path/to/resource
+        """
+        expect = """
+        <p>A <a href="path/to/resource">link text</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        A [link text][id] here
+
+        [ID]: path/to/resource
+        """
+        expect = """
+        <p>A <a href="path/to/resource">link text</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testIdWhitespace(self):
+        text = """
+        A [link text][id  whitespace is ok] here
+
+        [id  whitespace is ok]: path/to/resource
+        """
+        expect = """
+        <p>A <a href="path/to/resource">link text</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testIdNumbers(self):
+        text = """
+        A [link text][id12] here, and [second link][id23] here
+
+        [id12]: path/to/resource
+        [id23]: path/to/resource
+        """
+        expect = """
+        <p>A <a href="path/to/resource">link text</a> here, and <a href="path/to/resource">second link</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testTitle(self):
+        text = """
+        A [link text][id] here
+
+        [id]: path/to/resource "Optional title"
+        """
+        expect = """
+        <p>A <a href="path/to/resource" title="Optional title">link text</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        A [link text][id] here
+
+        [id]: path/to/resource 'Optional title'
+        """
+        expect = """
+        <p>A <a href="path/to/resource" title="Optional title">link text</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testIdImplicit(self):
+        text = """
+        A [id][] here
+
+        [id]: path/to/resource
+        """
+        expect = """
+        <p>A <a href="path/to/resource">id</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testImage(self):
+        text = """
+        A ![link here][id] here
+
+        [id]: path/to/resource
+        """
+        expect = """
+        <p>A <img src="path/to/resource" alt="link here"> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+
+
 if __name__ == '__main__':
     main()
