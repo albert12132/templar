@@ -194,18 +194,21 @@ def hash_text(s, label):
 
 block_tags = "blockquote|div|form|hr|noscript|ol|p|pre|table"
 re_block = re.compile(r"""
-    (?:(?<=\n)|(?<=\A))     # begin with newline or start of string
+(?:\n+|\A)               # begin with newline or start of string
+(                        # \1 is entire block
     <
         \s*
-        (%s)                # \1 is block_tags
-        (?:\s+.*?)          # any attributes
+        (%s)             # \2 is block_tags
+        (?:.*?)          # any attributes
     >
-    .*?                     # contents in block element
-    \n<                     # close must start at front of newline
+    .*?                  # contents in block element
+    \n<                  # close must start at front of newline
         \s*/\s*
-        \1                  # matching close tag
+        \2               # matching close tag
         \s*
     >
+)
+\n*
 """ % block_tags, re.S | re.X)
 def hash_blocks(text, hashes):
     """Hashes HTML block tags.
@@ -220,10 +223,10 @@ def hash_blocks(text, hashes):
     for a list of block tags.
     """
     def sub(match):
-        block = match.group(0)
+        block = match.group(1)
         hashed = hash_text(block, 'block')
         hashes[hashed] = block
-        return hashed
+        return '\n\n' + hashed + '\n\n'
     return re_block.sub(sub, text)
 
 re_list = r"""
@@ -640,11 +643,14 @@ avoids = r"""
 <hr/?>
 """
 paragraph_re = re.compile(r"""
-    (?:(?<=\n\n)|(?<=\A))   # begin at newline
-    (?!\n)                  # but don't include newlines in paragraph
-    (?!%s)                  # avoid certain strings
-    (.+?)                   # \1 is paragraph contents
-    (?:(?=\n\n)|(?=\n*\Z))  # end with blank line or end of string
+(?:(?<=\n\n)|(?<=\A))   # begin at newline
+(?!\n)                  # but don't include newlines in paragraph
+(?!%s)                  # avoid certain strings
+(.+?)                   # \1 is paragraph contents
+(?:
+    (?=\n\n)    |       # end with blank line
+    (?=\n*\Z)           # or end of string
+)
 """ % avoids, re.S | re.X)
 def paragraph_sub(match):
     """Captures paragraphs."""
