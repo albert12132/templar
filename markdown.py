@@ -528,10 +528,10 @@ def unhash(text, hashes):
 def apply_substitutions(text):
     text = hr_re.sub(hr_sub, text)
     text = emphasis_re.sub(emphasis_sub, text)
-    text = escape_re.sub(escapes_sub, text)
-    text = auto_escape_re.sub(auto_escape_sub, text)
     text = atx_header_re.sub(atx_header_sub, text)
     text = setext_header_re.sub(setext_header_sub, text)
+    text = escape_re.sub(escapes_sub, text)
+    text = auto_escape_re.sub(auto_escape_sub, text)
     text = paragraph_re.sub(paragraph_sub, text)
     return text
 
@@ -581,7 +581,7 @@ escape_re = re.compile(r"""
         \]  |
         \(  |
         \)  |
-        #   |
+        \#  |
         \+  |
         -   |
         \.  |
@@ -607,7 +607,7 @@ def atx_header_sub(match):
 
 setext_header_re = re.compile(r"""
     (?:(?<=\n)|(?<=\A))     # begin at newline
-    (.*?)                   # \1 is header title
+    ([^\n]+?)                   # \1 is header title
     \n
     (=+|-+)                 # \2 is header underline style
     (?=\n|\Z)               # must be followed by newline
@@ -664,9 +664,9 @@ def slug_sub(match):
     level = match.group(1)
     title = match.group(2)
     slug = title.lower()
-    slug = re.sub(r'[ \t]+', ' ', slug)
+    slug = re.sub(r'<.+?>|[^\w-]', ' ', slug)
+    slug = re.sub(r'[ \t]+', ' ', slug).strip()
     slug = slug.replace(' ', '-')
-    slug = re.sub(r'<.+?>|[^\w-]', '', slug)
     return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
 
 ##########################
@@ -681,7 +681,7 @@ def cmd_options(parser):
     parser.add_argument('-m', '--markdown', action='store_true',
                         help='Use Markdown conversion on source')
 
-def main(args, configs):
+def main(args, configs=None):
     if not args.file:
         text = ''
         print('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')
