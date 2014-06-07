@@ -26,8 +26,7 @@ class TemplarTest(unittest.TestCase):
         text = text.strip('\n')
         length = len(re.match('\s*', text).group(0))
         return '\n'.join(line[length:]
-                         for line in text.split('\n')
-                         if line.strip())
+                         for line in text.split('\n')).strip()
 
     def ignoreWhitespace(self, text):
         text = self.stripLeadingWhitespace(text)
