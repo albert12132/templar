@@ -585,7 +585,8 @@ escape_re = re.compile(r"""
         \+  |
         -   |
         \.  |
-        !
+        !   |
+        \\
     )
 """, re.X)
 def escapes_sub(match):
@@ -603,7 +604,7 @@ def atx_header_sub(match):
     """Substitutes atx headers (headers defined using #'s)."""
     level = len(match.group(1))
     title = match.group(2)
-    return '<h{0}>{1}</h{0}>'.format(level, title)
+    return '\n<h{0}>{1}</h{0}>\n'.format(level, title)
 
 setext_header_re = re.compile(r"""
     (?:(?<=\n)|(?<=\A))     # begin at newline
@@ -616,10 +617,27 @@ def setext_header_sub(match):
     """Substitutes setext headers (defined with underscores)."""
     title = match.group(1)
     level = 1 if '=' in match.group(2) else 2
-    return '<h{0}>{1}</h{0}>'.format(level, title)
+    return '\n<h{0}>{1}</h{0}>\n'.format(level, title)
 
-avoids = """
-    (?:(?P<hash>blockquote|block|tag|pre|list)-[\da-f]+-(?P=hash))|<h(?P<level>[1-6])>.*?</h(?P=level)>|<hr/>
+avoids = r"""
+(?:
+    (                   # \1 is hash type
+        blockquote  |
+        block       |
+        tag         |
+        pre         |
+        list
+    )
+    -[\da-f]+
+    -\1
+)                   |
+<
+    h([1-6])            # \2 is header level
+    .*?
+>
+.*?
+</h\2>              |
+<hr/?>
 """
 paragraph_re = re.compile(r"""
     (?:(?<=\n\n)|(?<=\A))   # begin at newline
@@ -630,7 +648,7 @@ paragraph_re = re.compile(r"""
 """ % avoids, re.S | re.X)
 def paragraph_sub(match):
     """Captures paragraphs."""
-    return '<p>{}</p>'.format(match.group(0))
+    return '<p>{}</p>'.format(match.group(0).strip())
 
 ###################
 # Post-processing #
