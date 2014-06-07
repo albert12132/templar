@@ -230,19 +230,23 @@ def hash_blocks(text, hashes):
     return re_block.sub(sub, text)
 
 re_list = r"""
-    (?:(?<=\n)|(?<=\A))         # newline or start of string
+(?:\n+|\A)                      # newline or start of string
+(                               # \1 is entire list
     (?:
         [ ]{0,3}                # up to three spaces
         %s                      # list marker
         (?!\ %s\ )              # * * * is not a valid list
         [ ]                     # must have at least one space
         .+?                     # list item
-        \n*                     # capture trailing newlines
+        \n*?                    # capture trailing newlines
         (?=                     # end of a list item
             \n\n(?![ ]{4}) |    # blank line without 4 spaces after
-            \Z                  # end of string
+            \Z                  # or end of string
         )
+        \n*
     )+                          # capture multiple list items
+)
+\n*
 """
 def hash_lists(text, hashes, markdown_obj):
     """Hashes ordered and unordered lists.
@@ -271,24 +275,29 @@ def hash_lists(text, hashes, markdown_obj):
     """
     for style, marker in (('u', '[+*-]'), ('o', r'\d+\.')):
         list_re = re.compile(re_list % (marker, marker), re.S | re.X)
-        for lst in list_re.findall(text):
+        # import pdb
+        # pdb.set_trace()
+        for match in list_re.finditer(text):
+            if not match:
+                continue
+            lst = match.group(1)
             items = re.split(r'(?:\n|\A) {0,3}%s ' % marker, lst)[1:]
             whole_list = ''
             for item in items:
                 item = re.sub(r'^ {1,4}', '', item, flags=re.M)
                 item = markdown_obj.convert(item)
-                match = re.match('<p>(.*?)</p>', item, flags=re.S)
-                if match and match.group(0) == item.strip():
-                    item = match.group(1)
+                par_match = re.match('<p>(.*?)</p>', item, flags=re.S)
+                if par_match and par_match.group(0) == item.strip():
+                    item = par_match.group(1)
                 whole_list += '<li>{}</li>\n'.format(item)
             whole_list = '<{0}l>\n{1}\n</{0}l>'.format(
                     style,
                     re.sub('^', '  ', whole_list.strip(), flags=re.M))
             hashed = hash_text(whole_list, 'list')
             hashes[hashed] = whole_list
-            start = text.index(lst)
-            end = start + len(lst)
-            text = text[:start] + '\n' + hashed + '\n\n' + text[end:]
+            start = text.index(match.group(0))
+            end = start + len(match.group(0))
+            text = text[:start] + '\n\n' + hashed + '\n\n' + text[end:]
     return text
 
 re_codeblock = re.compile(r"""
@@ -666,6 +675,7 @@ def paragraph_sub(match):
 
 def postprocess(text):
     text = slug_re.sub(slug_sub, text)
+    text = re.sub(r'^[ \t]+$', '', text, flags=re.M)
     text = text.strip()
     return text
 
