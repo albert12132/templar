@@ -47,6 +47,17 @@ class LinkTest(TemplarTest):
         expect = '<p><a href="path/to/url" title="title here">link here</a></p>'
         self.assertMarkdown(text, expect)
 
+    def testConsecutive(self):
+        text = """
+        [link here](path/to/url)
+        [another link here](path/to/url)
+        """
+        expect = """
+        <p><a href="path/to/url">link here</a>
+        <a href="path/to/url">another link here</a></p>
+        """
+        self.assertMarkdown(text, expect)
+
 class ImageTest(TemplarTest):
     def testBasic(self):
         text = "![link here](path/to/url)"
@@ -219,7 +230,18 @@ class ReferenceTest(TemplarTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testConsecutiveLinks(self):
+        text = """
+        [link here][]
+        [another link here](path/to/url)
 
+        [link here]: another/path
+        """
+        expect = """
+        <p><a href="another/path">link here</a>
+        <a href="path/to/url">another link here</a></p>
+        """
+        self.assertMarkdown(text, expect)
 
 if __name__ == '__main__':
     main()

@@ -396,7 +396,7 @@ def hash_codes(text, hashes):
 re_inline_link = re.compile(r"""
     (?<!\\)         # avoid escapes
     (!?)            # \1 is whether or not this is an img
-    \[(.*?)\]       # \2 is <a> text or <img> alt text
+    \[([^\[\]]*?)\] # \2 is <a> text or <img> alt text
     \(              # captures link
         \s*
         (.*?)       # \3 is link
@@ -440,11 +440,11 @@ def hash_inline_links(text, hashes):
     return re_inline_link.sub(sub, text)
 
 re_reference_link = re.compile(r"""
-    (?<!\\)     # avoid escapes
-    (!?)        # \1 is whether or not link is an <img>
-    \[(.*?)\]   # \2 is link text or img alt text
+    (?<!\\)             # avoid escapes
+    (!?)                # \1 is whether or not link is an <img>
+    \[([^\[\]]*?)\]     # \2 is link text or img alt text
     \[
-        (.*?)   # \3 is reference id
+        (.*?)           # \3 is reference id
     \]
 """, re.X | re.S)
 def hash_reference_links(text, hashes, markdown_obj):
