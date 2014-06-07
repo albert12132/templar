@@ -19,6 +19,8 @@ SUBSTITUTIONS = [
 # header_regex = re.compile(r"")
 # def header_translate(match):
 #     pass
+# def table_of_contents(headers):
+#     pass
 
 #############
 # Templates #

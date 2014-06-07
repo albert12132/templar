@@ -109,7 +109,7 @@ def scrape_headers(text, regex, translate):
                will appear in the order that the original headers
                are placed within text
     """
-    return [translate(match) for match in re.findall(regex, text)]
+    return [translate(match) for match in re.finditer(regex, text)]
 
 ##########
 # Linker #

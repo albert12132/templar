@@ -79,12 +79,11 @@ def get_template(filename, template_dirs):
 
     If no such `filename` is found, the program exits with status 1.
     """
-    # if ':' in filename:
-    #     app, filename = filename.split(':')
-    #     dirs = [os.path.join(BASE_PATH, app)]
-    # else:
-    #     dirs = TEMPLATE_DIRS
-    dirs = template_dirs
+    if ':' in filename:
+        app, filename = filename.split(':')
+        dirs = [path for path in template_dirs if app in path]
+    else:
+        dirs = template_dirs
     for path in dirs:
         template = os.path.join(path, 'templates', filename)
         if os.path.exists(template):
@@ -267,7 +266,15 @@ def main(args, configs):
                 configs[k] = v
             result = markdown_obj.text
         result = link.substitutions(result, configs.get('SUBSTITUTIONS', []))
-        _, cache = link.retrieve_blocks(result)
+        result, cache = link.retrieve_blocks(result)
+        if 'table_of_contents' in configs and \
+                'header_regex' in configs and \
+                'header_translate' in configs:
+            configs['table-of-contents'] = configs['table_of_contents'](
+                link.scrape_headers(
+                    result,
+                    configs['header_regex'],
+                    configs['header_translate']))
         for k, v in cache.items():
             configs[k] = v
 

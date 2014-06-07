@@ -34,10 +34,13 @@ def extract_configs(config, configs):
         if hasattr(config, lst):
             new = getattr(config, lst)
             configs.setdefault(lst, []).extend(new)
-    if hasattr(config, 'header_regex') and \
+    if hasattr(config, 'table_of_contents') and \
+            hasattr(config, 'header_regex') and \
             hasattr(config, 'header_translate'):
+        configs['table_of_contents'] = getattr(config, 'table_of_contents')
         configs['header_regex'] = getattr(config, 'header_regex')
         configs['header_translate'] = getattr(config, 'header_translate')
+
 
 ##########################
 # Command-line Interface #
