@@ -35,29 +35,30 @@ class BlockTagTest(TemplarTest):
         text = """
         Stuff
           <div>
-            Blah
+          *Blah*
           </div>
         """
         expect = """
         <p>Stuff
           <div>
-            Blah
+          <em>Blah</em>
           </div></p>
         """
         self.assertMarkdown(text, expect)
 
-    def testMultilineNotPretty(self):
+    def testPrecedingParagraph(self):
         text = """
-        > Block quote
-        here and there
-        and everywhere
+        Stuff
+        <div>
+          Blah
+        </div>
         """
         expect = """
-        <blockquote>
-        <p>Block quote
-        here and there
-        and everywhere</p>
-        </blockquote>
+        <p>Stuff</p>
+
+        <div>
+          Blah
+        </div>
         """
         self.assertMarkdown(text, expect)
 
