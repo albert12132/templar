@@ -117,7 +117,7 @@ class SetextTest(TemplarTest):
         expect = """
         <p>This should be one paragraph</p>
 
-        <h1>Header here</h1>
+        <h1 id="header-here">Header here</h1>
 
         <p>This should be another paragraph</p>
         """
@@ -132,7 +132,7 @@ class SetextTest(TemplarTest):
         expect = """
         <p>This should be one paragraph</p>
 
-        <h2>Header here</h2>
+        <h2 id="header-here">Header here</h2>
 
         <p>This should be another paragraph</p>
         """
@@ -207,7 +207,7 @@ class AtxHeaders(TemplarTest):
         expect = """
         <p>This should be one paragraph</p>
 
-        <h3>Header here</h3>
+        <h3 id="header-here">Header here</h3>
 
         <p>This should be another paragraph</p>
         """
