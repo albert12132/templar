@@ -81,7 +81,7 @@ class StrongEmTest(TemplarTest):
         expect = "<p><strong><em>This is a strong em</em></strong></p>"
         self.assertMarkdown(text, expect)
 
-        text = "___This is a strong___"
+        text = "___This is a strong em___"
         expect = "<p><strong><em>This is a strong em</em></strong></p>"
         self.assertMarkdown(text, expect)
 
