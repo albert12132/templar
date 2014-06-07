@@ -251,7 +251,7 @@ class SlugTests(TemplarTest):
         He!1. ^0#r$
         =
         """
-        expect = '<h1 id="he1-0r">He!1. ^0#r$</h1>'
+        expect = '<h1 id="he-1-0-r">He!1. ^0#r$</h1>'
         self.assertMarkdown(simple, expect)
 
     def testWhitespace(self):
