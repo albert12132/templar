@@ -4,9 +4,7 @@ class BlockquoteTest(TemplarTest):
     def testBasic(self):
         text = "> Block quote basic"
         expect = """
-        <blockquote>
-        <p>Block quote basic</p>
-        </blockquote>
+        <blockquote><p>Block quote basic</p></blockquote>
         """
         self.assertMarkdown(text, expect)
 
@@ -17,11 +15,9 @@ class BlockquoteTest(TemplarTest):
         > and everywhere
         """
         expect = """
-        <blockquote>
-        <p>Block quote
+        <blockquote><p>Block quote
         here and there
-        and everywhere</p>
-        </blockquote>
+        and everywhere</p></blockquote>
         """
         self.assertMarkdown(text, expect)
 
@@ -32,11 +28,9 @@ class BlockquoteTest(TemplarTest):
         and everywhere
         """
         expect = """
-        <blockquote>
-        <p>Block quote
+        <blockquote><p>Block quote
         here and there
-        and everywhere</p>
-        </blockquote>
+        and everywhere</p></blockquote>
         """
         self.assertMarkdown(text, expect)
 
@@ -50,14 +44,12 @@ class BlockquoteTest(TemplarTest):
         > here
         """
         expect = """
-        <blockquote>
-        <p>Block quote
+        <blockquote><p>Block quote
         here and there
         and everywhere</p>
 
         <p>Another paragraph
-        here</p>
-        </blockquote>
+        here</p></blockquote>
         """
         self.assertMarkdown(text, expect)
 
@@ -172,13 +164,9 @@ class BlockquoteTest(TemplarTest):
         > > Nested blockquote
         """
         expect = """
-        <blockquote>
-        <p>Some text</p>
+        <blockquote><p>Some text</p>
 
-        <blockquote>
-        <p>Nested blockquote</p>
-        </blockquote>
-        </blockquote>
+        <blockquote><p>Nested blockquote</p></blockquote></blockquote>
         """
         self.assertMarkdownIgnoreWS(text, expect)
 
@@ -205,14 +193,12 @@ class BlockquoteTest(TemplarTest):
         > * Item 2
         """
         expect = """
-        <blockquote>
-        <p>Some text</p>
+        <blockquote><p>Some text</p>
 
         <ul>
           <li>Item 1</li>
           <li>Item 2</li>
-        </ul>
-        </blockquote>
+        </ul></blockquote>
         """
         self.assertMarkdownIgnoreWS(text, expect)
 
@@ -222,14 +208,12 @@ class BlockquoteTest(TemplarTest):
         > 2. Item 2
         """
         expect = """
-        <blockquote>
-        <p>Some text</p>
+        <blockquote><p>Some text</p>
 
         <ol>
           <li>Item 1</li>
           <li>Item 2</li>
-        </ol>
-        </blockquote>
+        </ol></blockquote>
         """
         self.assertMarkdownIgnoreWS(text, expect)
 
@@ -243,16 +227,13 @@ class BlockquoteTest(TemplarTest):
         > Some more text
         """
         expect = """
-        <blockquote>
-        <p>Some text
+        <blockquote><p>Some text
         here</p>
         </blockquote>
 
         <p>Not in blockquote</p>
 
-        <blockquote>
-        <p>Some more text</p>
-        </blockquote>
+        <blockquote><p>Some more text</p></blockquote>
         """
         self.assertMarkdownIgnoreWS(text, expect)
 
