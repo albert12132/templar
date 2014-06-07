@@ -27,7 +27,7 @@ class CodeblockTest(TemplarTest):
             def hello(world):
                 return world
 
-            print(hello('hi'))
+            print(hello(hi))
         """
         expect = """
         <p>Text here</p>
@@ -35,7 +35,7 @@ class CodeblockTest(TemplarTest):
         <pre><code>def hello(world):
             return world
 
-        print(hello('hi'))</code></pre>
+        print(hello(hi))</code></pre>
         """
         self.assertMarkdown(text, expect)
 
@@ -47,7 +47,7 @@ class CodeblockTest(TemplarTest):
 
 
 
-            print(hello('hi'))
+            print(hello(hi))
         """
         expect = """
         <p>Text here</p>
@@ -55,7 +55,7 @@ class CodeblockTest(TemplarTest):
         <pre><code>def hello(world):
             return world
 
-        print(hello('hi'))</code></pre>
+        print(hello(hi))</code></pre>
         """
         self.assertMarkdown(text, expect)
 

@@ -68,7 +68,7 @@ class ListTest(TemplarTest):
         """
         expect = """
         <ul>
-          <li><p>Item 1</p>
+          <li><p>item 1</p>
 
           <ul>
             <li><p>item 2</p>
@@ -92,7 +92,7 @@ class ListTest(TemplarTest):
         """
         expect = """
         <ul>
-          <li><p>Item 1</p>
+          <li><p>item 1</p>
 
           <ul>
             <li>item 1</li>
@@ -389,7 +389,7 @@ class ListItemTest(TemplarTest):
         * item 1
 
                 def hello(world):
-                    return 'hi'
+                    return hi
 
         """
         expect = """
@@ -397,7 +397,7 @@ class ListItemTest(TemplarTest):
           <li><p>item 1</p>
 
         <pre><code>def hello(world):
-            return 'hi'</code></pre></li>
+            return hi</code></pre></li>
         </ul>
         """
         self.assertMarkdown(text, expect)
@@ -406,7 +406,7 @@ class ListItemTest(TemplarTest):
         * item 1
 
                 def hello(world):
-                    return 'hi'
+                    return hi
 
         * item 2
         """
@@ -415,7 +415,7 @@ class ListItemTest(TemplarTest):
           <li><p>item 1</p>
 
         <pre><code>def hello(world):
-            return 'hi'</code></pre></li>
+            return hi</code></pre></li>
           <li>item 2</li>
         </ul>
         """
@@ -426,7 +426,7 @@ class ListItemTest(TemplarTest):
         * item 1
 
             def hello(world):
-                return 'hi'
+                return hi
 
         * item 2
         """
@@ -435,7 +435,7 @@ class ListItemTest(TemplarTest):
           <li><p>item 1</p>
 
           <p>def hello(world):
-              return 'hi'</p></li>
+              return hi</p></li>
           <li>item 2</li>
         </ul>
         """
@@ -512,7 +512,7 @@ class ListItemTest(TemplarTest):
         <ul>
           <li><p>item 1</p>
 
-        <pre></code>* this is a codeblock
+        <pre><code>* this is a codeblock
           because it is indented
         * 8 spaces</code></pre></li>
         </ul>
@@ -529,7 +529,7 @@ class ListItemTest(TemplarTest):
         <ul>
           <li><p>item 1</p>
 
-        <pre></code>1. this is a codeblock
+        <pre><code>1. this is a codeblock
            because it is indented
         2. 8 spaces</code></pre></li>
         </ul>
@@ -547,7 +547,7 @@ class ListItemTest(TemplarTest):
         <ul>
           <li><p>item 1</p>
 
-        <pre></code>&gt; This is a codeblock
+        <pre><code>&gt; This is a codeblock
         &gt; Because it is indented
         &gt; 8 spaces</code></pre></li>
         </ul>
