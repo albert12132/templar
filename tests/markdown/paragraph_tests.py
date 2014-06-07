@@ -28,17 +28,21 @@ class ParagraphTest(TemplarTest):
         that contains multiple lines
         such as this one.</p>
 
-        <p>This is another paragraph that should be separate from the
-        first one</p>
+        <p>This is another paragraph
+        that should be separate from the first one</p>
         """
         self.assertMarkdown(text, expect)
 
     def testNoLeadingWhitespace(self):
         text = """
+        Stuff
+
            This text has three leading spaces
-        so it is still a parapraph
+        so it is still a paragraph
         """
         expect = """
+        <p>Stuff</p>
+
         <p>This text has three leading spaces
         so it is still a paragraph</p>
         """
@@ -171,11 +175,11 @@ class HorizontalRuleTest(TemplarTest):
         expect = """
         <p>paragraph here</p>
 
-        <p>**</p>
+        <hr/>
 
         <p>Horizontal rule above</p>
         """
-        self.assertMarkdown(text, expect)
+        self.assertMarkdownNotEqual(text, expect)
 
 class EscapeTest(TemplarTest):
     def testBasic(self):

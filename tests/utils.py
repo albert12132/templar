@@ -36,7 +36,7 @@ class TemplarTest(unittest.TestCase):
         markdown = self.stripLeadingWhitespace(markdown)
         output = self.stripLeadingWhitespace(output)
         try:
-            self.assertEqual(convert(markdown), output)
+            self.assertEqual(convert(markdown) + '\n', output + '\n')
         except AssertionError:
             raise
 
