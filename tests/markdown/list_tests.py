@@ -44,7 +44,7 @@ class ListTest(TemplarTest):
           aligned nicely to the side</li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testNewline(self):
         text = """
@@ -79,7 +79,7 @@ class ListTest(TemplarTest):
           </ul></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testNestedListWithMultipleItems(self):
         text = """
@@ -106,7 +106,7 @@ class ListTest(TemplarTest):
           </ul></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testNoWrap(self):
         text = """
@@ -121,7 +121,7 @@ class ListTest(TemplarTest):
           list</li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testParagraphs(self):
         text = """
@@ -138,7 +138,7 @@ class ListTest(TemplarTest):
           different paragraph</p></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
         text = """
         * item 1
@@ -160,7 +160,7 @@ class ListTest(TemplarTest):
           <p>Yet another paragraph</p></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testSeparated(self):
         text = """
@@ -184,7 +184,7 @@ class ListTest(TemplarTest):
           <li>item 2</li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testNotAList(self):
         text = """
@@ -207,6 +207,7 @@ class ListTest(TemplarTest):
         text = """
         * item 1
         * item 2
+
         1. item 1
         2. item 2
         """
@@ -221,11 +222,12 @@ class ListTest(TemplarTest):
           <li>item 2</li>
         </ol>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
         text = """
         1. item 1
         2. item 2
+
         * item 1
         * item 2
         """
@@ -240,12 +242,15 @@ class ListTest(TemplarTest):
           <li>item 2</li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
         text = """
         1. item 1
+
         * item 1
+
         2. item 2
+
         * item 2
         """
         expect = """
@@ -265,7 +270,7 @@ class ListTest(TemplarTest):
           <li>item 2</li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testNestedInterchangedListType(self):
         text = """
@@ -285,7 +290,7 @@ class ListTest(TemplarTest):
           <li>item 2</li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
         text = """
         * level 1
@@ -310,7 +315,7 @@ class ListTest(TemplarTest):
           </ol></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testLeadingEmphasis(self):
         text = """
@@ -426,7 +431,7 @@ class ListItemTest(TemplarTest):
         * item 1
 
             def hello(world):
-                return hi
+            return hi
 
         * item 2
         """
@@ -435,7 +440,7 @@ class ListItemTest(TemplarTest):
           <li><p>item 1</p>
 
           <p>def hello(world):
-              return hi</p></li>
+          return hi</p></li>
           <li>item 2</li>
         </ul>
         """
@@ -450,12 +455,10 @@ class ListItemTest(TemplarTest):
         <ul>
           <li><p>item 1</p>
 
-          <blockquote>
-          <p>blockquote in list</p>
-          </blockquote></li>
+          <blockquote><p>blockquote in list</p></blockquote></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
         text = """
         * item 1
@@ -469,13 +472,12 @@ class ListItemTest(TemplarTest):
         <ul>
           <li><p>item 1</p>
 
-          <blockquote>
-          <p>Multiline
+          <blockquote><p>Multiline
           blockquote
-          with no wrap here</p></li>
+          with no wrap here</p></blockquote></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
         text = """
         * item 1
@@ -491,15 +493,14 @@ class ListItemTest(TemplarTest):
         <ul>
           <li><p>item 1</p>
 
-          <blockquote>
-          <p>Multiline
+          <blockquote><p>Multiline
           blockquote</p>
 
           <p>with a
-          split in the middle</p></li>
+          split in the middle</p></blockquote></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testCodeblockLooksLikeList(self):
         text = """
@@ -512,7 +513,7 @@ class ListItemTest(TemplarTest):
         <ul>
           <li><p>item 1</p>
 
-        <pre><code>* this is a codeblock
+        <pre><code>* This is a codeblock
           because it is indented
         * 8 spaces</code></pre></li>
         </ul>
@@ -529,7 +530,7 @@ class ListItemTest(TemplarTest):
         <ul>
           <li><p>item 1</p>
 
-        <pre><code>1. this is a codeblock
+        <pre><code>1. This is a codeblock
            because it is indented
         2. 8 spaces</code></pre></li>
         </ul>
@@ -573,14 +574,14 @@ class ListItemTest(TemplarTest):
 
         <pre><code>This is a codeblock</code></pre></li>
             <li>item 2
-                This is not a codeblock</li>
+            This is not a codeblock</li>
           </ul></li>
           <li><p>item 2</p>
 
         <pre><code>This is a codeblock</code></pre></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
     def testBlockquoteInNestedList(self):
         text = """
@@ -595,13 +596,11 @@ class ListItemTest(TemplarTest):
           <ul>
             <li><p>item 1</p>
 
-            <blockquote>
-            <p>This is a blockquote</p>
-            </blockquote></li>
+            <blockquote><p>This is a blockquote</p></blockquote></li>
           </ul></li>
         </ul>
         """
-        self.assertMarkdownIgnoreWS(text, expect)
+        self.assertMarkdown(text, expect)
 
 if __name__ == '__main__':
     main()
