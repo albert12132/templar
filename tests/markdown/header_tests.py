@@ -1,174 +1,266 @@
 from utils import TemplarTest, main
 from markdown import convert, Markdown
 
-class SetextH1Test(TemplarTest):
-    def setUp(self):
-        super().setUp()
-        self.simple = "Hello World!\n"
-
+class SetextTest(TemplarTest):
     def testBasic(self):
-        self.simple += '=' * len(self.simple)
+        simple = """
+        Hello World!
+        ============
+        """
         expect = '<h1 id="hello-world">Hello World!</h1>'
-        self.assertEqual(expect, convert(self.simple))
+        self.assertMarkdown(simple, expect)
+
+        simple = """
+        Hello World!
+        ------------
+        """
+        expect = '<h2 id="hello-world">Hello World!</h2>'
+        self.assertMarkdown(simple, expect)
 
     def testShortUnderline(self):
-        self.simple += '='
+        simple = """
+        Hello World!
+        =
+        """
         expect = '<h1 id="hello-world">Hello World!</h1>'
-        self.assertEqual(expect, convert(self.simple))
+        self.assertMarkdown(simple, expect)
 
-    def testNewlines(self):
-        self.simple += '='
-        expect = '<h1 id="hello-world">Hello World!</h1>'
-        self.assertEqual(expect, convert(self.simple))
+        simple = """
+        Hello World!
+        -
+        """
+        expect = '<h2 id="hello-world">Hello World!</h2>'
+        self.assertMarkdown(simple, expect)
 
-    def testEmphasis(self):
-        italics = "Some *italics*\n="
+    def testEmphasisH1(self):
+        italics = """
+        Some *italics*
+        ==============
+        """
         expect = '<h1 id="some-italics">Some <em>italics</em></h1>'
-        self.assertEqual(expect, convert(italics))
+        self.assertMarkdown(italics, expect)
 
-        bold = "Some **bold**\n="
+        bold = """
+        Some **bold**
+        =
+        """
         expect = '<h1 id="some-bold">Some <strong>bold</strong></h1>'
-        self.assertEqual(expect, convert(bold))
+        self.assertMarkdown(bold, expect)
 
-        italics_bold = "Some ***italics bold***\n="
+        italics_bold = """
+        Some ***italics bold***
+        =
+        """
         expect = '<h1 id="some-italics-bold">Some <strong><em>italics bold</em></strong></h1>'
-        self.assertEqual(expect, convert(italics_bold))
+        self.assertMarkdown(italics_bold, expect)
 
-        code = "Some `code here`\n="
+        code = """
+        Some `code here`
+        =
+        """
         expect = '<h1 id="some-code-here">Some <code>code here</code></h1>'
-        self.assertEqual(expect, convert(code))
+        self.assertMarkdown(code, expect)
 
-    def testTwoNewlines(self):
-        self.simple += '\n='
-        notExpect = '<h1 id="hello-world">Hello World!</h1>'
-        self.assertNotEqual(notExpect, convert(self.simple))
-
-    def testNoParagraph(self):
-        text = """
-This should be one paragraph
-Header here
-===========
-This should be another paragraph
-"""
-        expect = '<p>This should be one paragraph</p>\n<h1>Header here</h1>\n<p>This should be another paragraph</p>'
-        self.assertEqual(expect, convert(text))
-
-class SetextH2Test(TemplarTest):
-    def setUp(self):
-        super().setUp()
-        self.simple = "Hello World!\n"
-
-    def testBasic(self):
-        self.simple += '-' * len(self.simple)
-        expect = '<h2 id="hello-world">Hello World!</h2>'
-        self.assertEqual(expect, convert(self.simple))
-
-    def testShortUnderline(self):
-        self.simple += '-'
-        expect = '<h2 id="hello-world">Hello World!</h2>'
-        self.assertEqual(expect, convert(self.simple))
-
-    def testNewlines(self):
-        self.simple += '-'
-        expect = '<h2 id="hello-world">Hello World!</h2>'
-        self.assertEqual(expect, convert('\n' + self.simple + '\n'))
-
-    def testEmphasis(self):
-        italics = "Some *italics*\n-"
+    def testEmphasisH2(self):
+        italics = """
+        Some *italics*
+        --------------
+        """
         expect = '<h2 id="some-italics">Some <em>italics</em></h2>'
-        self.assertEqual(expect, convert(italics))
+        self.assertMarkdown(italics, expect)
 
-        bold = "Some **bold**\n-"
+        bold = """
+        Some **bold**
+        -
+        """
         expect = '<h2 id="some-bold">Some <strong>bold</strong></h2>'
-        self.assertEqual(expect, convert(bold))
+        self.assertMarkdown(bold, expect)
 
-        italics_bold = "Some ***italics bold***\n-"
+        italics_bold = """
+        Some ***italics bold***
+        -
+        """
         expect = '<h2 id="some-italics-bold">Some <strong><em>italics bold</em></strong></h2>'
-        self.assertEqual(expect, convert(italics_bold))
+        self.assertMarkdown(italics_bold, expect)
 
-        code = "Some `code here`\n-"
+        code = """
+        Some `code here`
+        -
+        """
         expect = '<h2 id="some-code-here">Some <code>code here</code></h2>'
-        self.assertEqual(expect, convert(code))
+        self.assertMarkdown(code, expect)
 
     def testTwoNewlines(self):
-        self.simple += '\n-'
+        simple = """
+        Hello World!
+
+        =
+        """
+        notExpect = '<h1 id="hello-world">Hello World!</h1>'
+        self.assertMarkdownNotEqual(simple, notExpect)
+
+        simple = """
+        Hello World!
+
+        -
+        """
         notExpect = '<h2 id="hello-world">Hello World!</h2>'
-        self.assertNotEqual(notExpect, convert(self.simple))
+        self.assertMarkdownNotEqual(simple, notExpect)
 
     def testNoParagraph(self):
         text = """
-This should be one paragraph
-Header here
------------
-This should be another paragraph
-"""
-        expect = '<p>This should be one paragraph</p>\n<h2>Header here</h2>\n<p>This should be another paragraph</p>'
-        self.assertEqual(expect, convert(text))
+        This should be one paragraph
+        Header here
+        ===========
+        This should be another paragraph
+        """
+        expect = """
+        <p>This should be one paragraph</p>
+
+        <h1>Header here</h1>
+
+        <p>This should be another paragraph</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        This should be one paragraph
+        Header here
+        -----------
+        This should be another paragraph
+        """
+        expect = """
+        <p>This should be one paragraph</p>
+
+        <h2>Header here</h2>
+
+        <p>This should be another paragraph</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testMixed(self):
+        text = """
+        Not a header
+        =-
+        """
+        expect = """
+        <p>Not a header
+        =-</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        Not a header
+        -=
+        """
+        expect = """
+        <p>Not a header
+        -=</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testEscaped(self):
+        text = r"""
+        Not a header
+        \-----------
+        """
+        expect = """
+        <p>Not a header
+        -----------</p>
+        """
+        self.assertMarkdown(text, expect)
 
 class AtxHeaders(TemplarTest):
-    def setUp(self):
-        super().setUp()
-
     def testBasic(self):
         title = "Title Here"
         expect = '<h{0} id="title-here">Title Here</h{0}>'
         for i in range(1, 7):
-            self.assertEqual(expect.format(i), convert('#'*i + ' ' + title))
+            self.assertMarkdown('#'*i + ' ' + title, expect.format(i))
 
     def testNoLeadingWhitespace(self):
         title = "Title Here"
         expect = '<h{0} id="title-here">Title Here</h{0}>'
         for i in range(1, 7):
-            self.assertEqual(expect.format(i), convert('#'*i + title))
+            self.assertMarkdown('#'*i + title, expect.format(i))
 
     def testExtraLeadingWhitespace(self):
         title = "Title Here"
         expect = '<h{0} id="title-here">Title Here</h{0}>'
         for i in range(1, 7):
-            self.assertEqual(expect.format(i), convert('#'*i + '    ' + title))
+            self.assertMarkdown('#'*i + '  ' + title, expect.format(i))
 
     def testTrailingHashes(self):
         title = "Title Here"
         expect = '<h{0} id="title-here">Title Here</h{0}>'
         for i in range(1, 7):
-            self.assertEqual(expect.format(i), convert('#'*i + title + ' ####'))
+            self.assertMarkdown('#'*i + title + ' ####', expect.format(i))
 
         for i in range(1, 7):
-            self.assertEqual(expect.format(i), convert('#'*i + title + '####'))
+            self.assertMarkdown('#'*i + title + '####', expect.format(i))
 
     def testNoParagraph(self):
         text = """
-This should be one paragraph
-### Header here
-This should be another paragraph
-"""
-        expect = '<p>This should be one paragraph</p>\n<h3>Header here</h3>\n<p>This should be another paragraph</p>'
-        self.assertEqual(expect, convert(text))
+        This should be one paragraph
+        ### Header here
+        This should be another paragraph
+        """
+        expect = """
+        <p>This should be one paragraph</p>
 
+        <h3>Header here</h3>
 
+        <p>This should be another paragraph</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testEscape(self):
+        text = r"""
+        \### Not a header
+        """
+        expect = """
+        <p>### Not a header</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = r"""
+        #\## This is a level 1 header
+        """
+        expect = """
+        <h1 id="this-is-a-level-1-header">## This is a level 1 header</h1>
+        """
+        self.assertMarkdown(text, expect)
 
 class SlugTests(TemplarTest):
-    def setUp(self):
-        super().setUp()
-
     def testBasic(self):
-        simple = 'Hello World!\n='
+        simple = """
+        Hello World!
+        =
+        """
         expect = '<h1 id="hello-world">Hello World!</h1>'
-        self.assertEqual(expect, convert(simple))
+        self.assertMarkdown(simple, expect)
 
-        simple = 'With some 1337 hax0r\n='
+        simple = """
+        With some 1337 hax0r
+        =
+        """
         expect = '<h1 id="with-some-1337-hax0r">With some 1337 hax0r</h1>'
-        self.assertEqual(expect, convert(simple))
+        self.assertMarkdown(simple, expect)
 
     def testPunctuation(self):
-        simple = 'He!1. ^0#r$\n='
+        simple = """
+        He!1. ^0#r$
+        =
+        """
         expect = '<h1 id="he1-0r">He!1. ^0#r$</h1>'
-        self.assertEqual(expect, convert(simple))
+        self.assertMarkdown(simple, expect)
 
     def testWhitespace(self):
-        simple = 'Lots       of  whitespace\n='
+        simple = """
+        Lots       of  whitespace
+        =
+        """
         expect = '<h1 id="lots-of-whitespace">Lots       of  whitespace</h1>'
-        self.assertEqual(expect, convert(simple))
+        self.assertMarkdown(simple, expect)
 
         simple = '   leading whitespace\n='
         expect = '<h1 id="leading-whitespace">leading whitespace</h1>'

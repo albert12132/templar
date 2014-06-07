@@ -59,6 +59,22 @@ class CodeblockTest(TemplarTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testNotACodeblock(self):
+        text = """
+        Stuff
+
+           Only three spaces, not a codeblock
+            This should be in codeblock
+        """
+        expect = """
+        <p>Stuff</p>
+
+        <p>Only three spaces, not a codeblock</p>
+
+        <pre><code>This should be in codeblock</code></pre>
+        """
+        self.assertMarkdownIgnoreWS(text, expect)
+
     def testPreserveWhitespace(self):
         text = """
         Stuff

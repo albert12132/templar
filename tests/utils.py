@@ -41,6 +41,14 @@ class TemplarTest(unittest.TestCase):
         except AssertionError:
             raise
 
+    def assertMarkdownNotEqual(self, markdown, output):
+        markdown = self.stripLeadingWhitespace(markdown)
+        output = self.stripLeadingWhitespace(output)
+        try:
+            self.assertNotEqual(output, convert(markdown))
+        except AssertionError:
+            raise
+
     def assertMarkdownIgnoreWS(self, markdown, output):
         markdown = self.stripLeadingWhitespace(markdown)
         try:
