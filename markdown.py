@@ -292,12 +292,14 @@ def hash_lists(text, hashes, markdown_obj):
     return text
 
 re_codeblock = re.compile(r"""
-    (?:(?<=\n)|(?<=\A))     # newline or start of string
+(?:\n+|\A)    # newline or start of string
+(                       # \1 is entire codeblock
     (?:
-        [ ]{4}              # at least four spaces
-        .+?                 # contents of line
-        (?:\n+|\Z)          # ends with 1+ newlines or end of string
+        [ ]{4}          # at least four spaces
+        .+?             # contents of line
+        (?:\n+|\Z)      # ends with 1+ newlines or end of string
     )+
+)
 """, re.S | re.X)
 def hash_codeblocks(text, hashes):
     """Hashes codeblocks (<pre> elements).
@@ -318,20 +320,22 @@ def hash_codeblocks(text, hashes):
     to accomodate (and even look) for this type of conversion.
     """
     def sub(match):
-        block = match.group(0).rstrip('\n')
+        block = match.group(1).rstrip('\n')
         block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
         block = html.escape(block)
         block = '<pre><code>{}</code></pre>'.format(block)
         hashed = hash_text(block, 'pre')
         hashes[hashed] = block
-        return '\n' + hashed + '\n\n'
+        return '\n\n' + hashed + '\n\n'
     return re_codeblock.sub(sub, text)
 
 re_blockquote = re.compile(r"""
-    (?:(?<=\n)|(?<=\A))         # newline or start of string
+(?:\n+|\A)                      # newline or start of string
+(                               # \1 is entire blockquote
     (?:
         >[ ].*?\n*(?:\n\n|\Z)   # blockquote section
     )+
+)
 """, re.S | re.X)
 def hash_blockquotes(text, hashes, markdown_obj):
     """Hashes block quotes.
@@ -346,13 +350,13 @@ def hash_blockquotes(text, hashes, markdown_obj):
     recursively converted.
     """
     def sub(match):
-        block = match.group(0).strip()
-        block = re.sub(r'(?:(?<=\n)|(?<=\A))> ', '', block)
+        block = match.group(1).strip()
+        block = re.sub(r'(?:(?<=\n)|(?<=\A))> ?', '', block)
         block = markdown_obj.convert(block)
-        block = '<blockquote>\n{}\n</blockquote>'.format(block)
+        block = '<blockquote>{}</blockquote>'.format(block)
         hashed = hash_text(block, 'blockquote')
         hashes[hashed] = block
-        return '\n' + hashed + '\n\n'
+        return '\n\n' + hashed + '\n\n'
     return re_blockquote.sub(sub, text)
 
 re_code = re.compile(r"""
