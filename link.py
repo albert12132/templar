@@ -138,7 +138,7 @@ def substitute_links(text, cache, base_dir):
     def link_sub(match):
         filename = match.group(2)
         regex = match.group(3)
-        if not os.path.exists(filename):
+        if not file_exists(filename):
             filename = os.path.join(base_dir, filename)
         text = retrieve_and_link(filename, cache)
         if not regex:
@@ -206,6 +206,9 @@ def cache_blocks(filename, text, cache):
     text = re_close_block.sub('', text)
     cache[filename + ':all'] = text
     return text
+
+def file_exists(filename):
+    return os.path.exists(filename)
 
 def file_read(filename):
     with open(filename, 'r') as f:

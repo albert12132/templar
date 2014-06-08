@@ -61,8 +61,9 @@ class MarkdownTest(TemplarTest):
 class LinkTest(TemplarTest):
     def setUp(self):
         self.files = {}
-        self.old_file = link.file_read, link.file_write
+        self.old_file = link.file_read, link.file_write, link.file_exists
         link.file_read = self._read
+        link.file_exists = self._file_exists
         # link.file_write = # TODO
 
     def teardDown(self):
@@ -75,6 +76,9 @@ class LinkTest(TemplarTest):
 
     def _read(self, filename):
         return self.files[filename]
+
+    def _file_exists(self, filename):
+        return filename in self.files
 
     def assertLink(self, src, output, files=None):
         if files:
