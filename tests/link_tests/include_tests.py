@@ -28,6 +28,14 @@ class IncludeTest(LinkTest):
         """
         self.assertLink(text, expect, files)
 
+    def testNoIncludes(self):
+        text = """
+        No includes
+        can be found here
+        """
+        expect = text
+        self.assertLink(text, expect)
+
     def testSurroundingText(self):
         text = """
         Begin
@@ -294,6 +302,31 @@ class IncludeTest(LinkTest):
         expect = """
         Hello world!
         New Age
+        """
+        self.assertLink(text, expect, files)
+
+    def testPreserveBlocks(self):
+        text = """
+        <block hello>
+        Hello
+        </block hello>
+        """
+        expect = text
+        self.assertLink(text, expect)
+
+    def testRemoveIncludedBlocks(self):
+        text = """
+        <include test.md>
+        """
+        files = {
+            'test.md': """
+            <block blockA>
+            Hello
+            </block blockA>
+            """,
+        }
+        expect = """
+        Hello
         """
         self.assertLink(text, expect, files)
 

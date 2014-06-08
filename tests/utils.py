@@ -26,7 +26,6 @@ class TemplarTest(unittest.TestCase):
         text = self.stripLeadingWhitespace(text)
         return re.sub('\s+', '', text, flags=re.S)
 
-
 class MarkdownTest(TemplarTest):
     def setUp(self):
         pass
@@ -85,35 +84,35 @@ class LinkTest(TemplarTest):
             self.register_read(files)
         result = link.link(self.stripLeadingWhitespace(src)) + '\n'
         output = self.stripLeadingWhitespace(output) + '\n'
-        try:
-            self.assertEqual(result, output)
-        except AssertionError:
-            raise
+        self.assertEqual(result, output)
 
     def assertBlock(self, src, output, expect_cache):
         result, cache = link.retrieve_blocks(self.stripLeadingWhitespace(src))
         result += '\n'
         output = self.stripLeadingWhitespace(output) + '\n'
-        try:
-            self.assertEqual(result, output)
-            self.assertDictEqual(expect_cache, cache)
-        except AssertionError:
-            raise
+        self.assertEqual(result, output)
+        self.assertDictEqual(expect_cache, cache)
+
+    def assertSubstitution(self, src, output, subs, files=None):
+        if files:
+            self.register_read(files)
+        result = link.link(self.stripLeadingWhitespace(src)) + '\n'
+        result = link.substitutions(result, subs)
+        output = self.stripLeadingWhitespace(output) + '\n'
+        self.assertEqual(result, output)
 
     def assertDictEqual(self, dict1, dict2):
         keys1 = set(dict1.keys())
         keys2 = set(dict2.keys())
-        try:
-            self.assertEqual(keys1, keys2)
-        except AssertionError:
-            raise
+        self.assertEqual(keys1, keys2)
 
         for k in keys1:
-            try:
-                self.assertEqual(self.stripLeadingWhitespace(dict1[k]),
-                                 self.stripLeadingWhitespace(dict2[k]))
-            except AssertionError:
-                raise
+            self.assertEqual(self.stripLeadingWhitespace(dict1[k]),
+                             self.stripLeadingWhitespace(dict2[k]))
+
+    def assertHeaders(self, text, regex, translate, expect):
+        self.assertEqual(link.scrape_headers(text, regex, translate),
+                         expect)
 
 def main():
     unittest.main()

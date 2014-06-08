@@ -16,6 +16,17 @@ class BlockTest(LinkTest):
         }
         self.assertBlock(text, expect, expect_cache)
 
+    def testNoBlocks(self):
+        text = """
+        There are no
+        blocks here
+        """
+        expect = text
+        expect_cache = {
+            ':all': text,
+        }
+        self.assertBlock(text, expect, expect_cache)
+
     def testContents(self):
         text = """
         Begin
