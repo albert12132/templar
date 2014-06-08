@@ -712,15 +712,13 @@ def slug_sub(match):
 ##########################
 
 def cmd_options(parser):
-    parser.add_argument('-f', '--file', type=str,
+    parser.add_argument('-s', '--source', type=str,
                         help="Convert contents of Markdown file")
     parser.add_argument('-d', '--destination', type=str,
                         help="Store result in destination file")
-    parser.add_argument('-m', '--markdown', action='store_true',
-                        help='Use Markdown conversion on source')
 
 def main(args, configs=None):
-    if not args.file:
+    if not args.source:
         text = ''
         print('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')
         while True:
@@ -733,13 +731,13 @@ def main(args, configs=None):
                 print('\n--- Aborting script ---')
                 exit(1)
     else:
-        if not os.path.exists(args.file):
-            print('File ' + args.file + ' does not exist.')
+        if not os.path.exists(args.source):
+            print('File ' + args.source + ' does not exist.')
             exit(1)
-        elif not os.path.isfile(args.file):
-            print(args.file + ' is not a valid file')
+        elif not os.path.isfile(args.source):
+            print(args.source + ' is not a valid file')
             exit(1)
-        with open(args.file, 'r') as f:
+        with open(args.source, 'r') as f:
             text = f.read()
     result = convert(text)
     if args.destination:
@@ -750,6 +748,6 @@ def main(args, configs=None):
         print(result)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="""Markdown parser""")
     cmd_options(parser)
     main(parser.parse_args())
