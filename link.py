@@ -157,21 +157,40 @@ def retrieve_and_link(filename, cache):
     return text
 
 re_block = re.compile(r"""
-    [^\n]*
-    <\s*
-        block
-        \s+
-        (.+?)       # \1 is block name
-    \s*>
-    [^\n]*\n
-    (.*?)           # \2 is block contents
-    \n[^\n]*
-    </\s*        # forward slash to denote closing tag
-        block
-        \s+
-        \1
-    \s*>
-    [^\n]*
+[^\n]*
+<\s*
+    block
+    \s+
+    (.+?)       # \1 is block name
+\s*>
+[^\n]*\n
+(.*?)           # \2 is block contents
+\n[^\n]*
+</\s*        # forward slash to denote closing tag
+    block
+    \s+
+    \1
+\s*>
+[^\n]*
+""", re.S | re.X)
+# TODO refactor
+re_open_block = re.compile(r"""
+[^\n]*
+<\s*
+    block
+    \s+
+    (.+?)       # \1 is block name
+\s*>
+(\n|\Z)
+""", re.S | re.X)
+re_close_block = re.compile(r"""
+(\n|\A)
+[^\n]*
+<\s* / \s*
+    block
+    \s+
+    (.+?)       # \1 is block name
+\s*>
 """, re.S | re.X)
 
 def cache_blocks(filename, text, cache):
@@ -180,6 +199,9 @@ def cache_blocks(filename, text, cache):
             contents = cache_blocks(filename, contents, cache)
             cache[filename + ':' + name] = contents
         text = re_block.sub(lambda m: m.group(2), text)
+    # TODO refactor
+    text = re_open_block.sub('', text)
+    text = re_close_block.sub('', text)
     cache[filename + ':all'] = text
     return text
 
