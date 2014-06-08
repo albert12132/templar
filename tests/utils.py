@@ -5,7 +5,7 @@ import os
 import unittest
 import re
 from markdown import convert, Markdown
-from link import link, retrieve_blocks, substitutions, scrape_headers
+import link
 
 class TemplarTest(unittest.TestCase):
     @staticmethod
@@ -59,14 +59,27 @@ class MarkdownTest(TemplarTest):
             raise
 
 class LinkTest(TemplarTest):
-    def setup(self):
-        pass
+    def setUp(self):
+        self.files = {}
+        self.old_file = link.file_read, link.file_write
+        link.file_read = self._read
+        # link.file_write = # TODO
 
     def teardDown(self):
-        pass
+        link.file_read, link.file_write = self.old_file
+        self.files = None
 
-    def assertLink(self, src, output):
-        result = link(self.stripLeadingWhitespace(src)) + '\n'
+    def register_read(self, files):
+        for filename, contents in files.items():
+            self.files[filename] = self.stripLeadingWhitespace(contents)
+
+    def _read(self, filename):
+        return self.files[filename]
+
+    def assertLink(self, src, output, files=None):
+        if files:
+            self.register_read(files)
+        result = link.link(self.stripLeadingWhitespace(src)) + '\n'
         output = self.stripLeadingWhitespace(output) + '\n'
         try:
             self.assertEqual(result, output)
@@ -74,7 +87,7 @@ class LinkTest(TemplarTest):
             raise
 
     def assertBlock(self, src, output, expect_cache):
-        result, cache = retrieve_blocks(self.stripLeadingWhitespace(src))
+        result, cache = link.retrieve_blocks(self.stripLeadingWhitespace(src))
         result += '\n'
         output = self.stripLeadingWhitespace(output) + '\n'
         try:

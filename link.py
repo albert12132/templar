@@ -119,7 +119,8 @@ def add_whitespace(text, whitespace):
     return whitespace + ('\n' + whitespace).join(line for line in text.split('\n'))
 
 re_include = re.compile(r"""
-\n([ \t]*)      # \1 is leading whitespace
+(?:(?<=\n)|(?<=\A))
+([ \t]*)      # \1 is leading whitespace
 <\s*
     include
     \s+
@@ -150,8 +151,9 @@ def substitute_links(text, cache, base_dir):
     return re_include.sub(link_sub, text)
 
 def retrieve_and_link(filename, cache):
-    with open(filename, 'r') as f:
-        text = f.read()
+    text = file_read(filename)
+    # with open(filename, 'r') as f:
+    #     text = f.read()
     text = substitute_links(text, cache, os.path.dirname(filename))
     cache_blocks(filename, text, cache)
     return text
@@ -205,6 +207,14 @@ def cache_blocks(filename, text, cache):
     cache[filename + ':all'] = text
     return text
 
+def file_read(filename):
+    with open(filename, 'r') as f:
+        return f.read()
+
+def file_write(filename, text):
+    with open(filename, 'w') as f:
+        f.write(text)
+
 
 ##########################
 # Command-line Interface #
@@ -225,8 +235,9 @@ def main(args, configs):
     elif not os.path.isfile(args.source):
         print(args.source + ' is not a valid file')
         exit(1)
-    with open(args.source, 'r') as f:
-        result = link(f.read())
+    result = link(file_read(args.source))
+    # with open(args.source, 'r') as f:
+    #     result = link(f.read())
     if args.markdown:
         result = convert(result)
     result = substitutions(result, configs.get('SUBSTITUTIONS', []))
@@ -237,8 +248,9 @@ def main(args, configs):
     #     for k in sorted(cache):
     #         print(k)
     if args.destination:
-        with open(args.destination, 'w') as f:
-            f.write(result)
+        file_write(args.destination, result)
+        # with open(args.destination, 'w') as f:
+        #     f.write(result)
         print('Result can be found in ' + args.destination)
     else:
         print('--- BEGIN RESULT ---')
