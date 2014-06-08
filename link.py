@@ -115,32 +115,38 @@ def scrape_headers(text, regex, translate):
 # Linker #
 ##########
 
+def add_whitespace(text, whitespace):
+    return whitespace + ('\n' + whitespace).join(line for line in text.split('\n'))
+
 re_include = re.compile(r"""
-    <\s*
-        include
-        \s+
-        (.+?)       # \1 is filename
-        (?:
-            :       # colon as delimiter
-            (.+?)   # \2 is block regex
-        )?          # optional
-    \s*>
+\n([ \t]*)      # \1 is leading whitespace
+<\s*
+    include
+    \s+
+    (.+?)       # \2 is filename
+    (?:
+        :       # colon as delimiter
+        (.+?)   # \3 is block regex
+    )?          # optional
+\s*>
 """, re.X)
 def substitute_links(text, cache, base_dir):
     """Create a function that acts as a substitution function for the
     include-tag regex.
     """
     def link_sub(match):
-        filename = match.group(1)
-        regex = match.group(2)
+        filename = match.group(2)
+        regex = match.group(3)
         if not os.path.exists(filename):
             filename = os.path.join(base_dir, filename)
         text = retrieve_and_link(filename, cache)
         if not regex:
-            return cache[filename + ':all']
-        return '\n'.join([cache[block] for block in cache
-                          if re.match('^' + regex + '$',
+            result = cache[filename + ':all']
+        else:
+            result = '\n'.join([cache[block] for block in cache
+                               if re.match('^' + regex + '$',
                                       block.split(':')[-1])])
+        return add_whitespace(result, match.group(1))
     return re_include.sub(link_sub, text)
 
 def retrieve_and_link(filename, cache):
