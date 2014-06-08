@@ -1,6 +1,6 @@
-from utils import TemplarTest, main
+from utils import MarkdownTest, main
 
-class LinkTest(TemplarTest):
+class LinkTest(MarkdownTest):
     def testBasic(self):
         text = "[link here](path/to/url)"
         expect = '<p><a href="path/to/url">link here</a></p>'
@@ -58,7 +58,7 @@ class LinkTest(TemplarTest):
         """
         self.assertMarkdown(text, expect)
 
-class ImageTest(TemplarTest):
+class ImageTest(MarkdownTest):
     def testBasic(self):
         text = "![link here](path/to/url)"
         expect = '<p><img src="path/to/url" alt="link here"></p>'
@@ -105,7 +105,7 @@ class ImageTest(TemplarTest):
         expect = '<p><img src="path/to/url" alt="link here" title="title here"></p>'
         self.assertMarkdown(text, expect)
 
-class ReferenceTest(TemplarTest):
+class ReferenceTest(MarkdownTest):
     def testRemoval(self):
         text = "[id]: path/to/resource"
         expect = ''

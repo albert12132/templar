@@ -1,6 +1,6 @@
-from utils import TemplarTest, main
+from utils import MarkdownTest, main
 
-class BlockquoteTest(TemplarTest):
+class BlockquoteTest(MarkdownTest):
     def testBasic(self):
         text = "> Block quote basic"
         expect = """

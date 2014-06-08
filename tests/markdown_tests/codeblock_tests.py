@@ -1,6 +1,6 @@
-from utils import TemplarTest, main
+from utils import MarkdownTest, main
 
-class CodeblockTest(TemplarTest):
+class CodeblockTest(MarkdownTest):
     def testBasic(self):
         text = """
         Text here

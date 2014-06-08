@@ -1,6 +1,6 @@
-from utils import TemplarTest, main
+from utils import MarkdownTest, main
 
-class BlockTagTest(TemplarTest):
+class BlockTagTest(MarkdownTest):
     def testDiv(self):
         text = """
         <div>
@@ -62,7 +62,7 @@ class BlockTagTest(TemplarTest):
         """
         self.assertMarkdown(text, expect)
 
-class TagTest(TemplarTest):
+class TagTest(MarkdownTest):
     def testBasic(self):
         text = """
         This has a <span>here</span>

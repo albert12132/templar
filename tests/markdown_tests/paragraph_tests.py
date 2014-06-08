@@ -1,6 +1,6 @@
-from utils import TemplarTest, main
+from utils import MarkdownTest, main
 
-class ParagraphTest(TemplarTest):
+class ParagraphTest(MarkdownTest):
     def testBasic(self):
         text = """
         This text should be in a single paragraph
@@ -48,7 +48,7 @@ class ParagraphTest(TemplarTest):
         """
         self.assertMarkdown(text, expect)
 
-class HorizontalRuleTest(TemplarTest):
+class HorizontalRuleTest(MarkdownTest):
     def testBasic(self):
         text = """
         paragraph here
@@ -181,7 +181,7 @@ class HorizontalRuleTest(TemplarTest):
         """
         self.assertMarkdownNotEqual(text, expect)
 
-class EscapeTest(TemplarTest):
+class EscapeTest(MarkdownTest):
     def testBasic(self):
         self.assertMarkdown(r'\\', r"<p>\</p>")
         self.assertMarkdown(r'\`', r"<p>`</p>")

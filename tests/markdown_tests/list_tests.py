@@ -1,6 +1,6 @@
-from utils import TemplarTest, main
+from utils import MarkdownTest, main
 
-class ListTest(TemplarTest):
+class ListTest(MarkdownTest):
     def testBasic(self):
         text = """
         * item 1
@@ -375,7 +375,7 @@ class ListTest(TemplarTest):
         """
         self.assertMarkdown(text, expect)
 
-class ListItemTest(TemplarTest):
+class ListItemTest(MarkdownTest):
     def testCodeblock(self):
         text = """
         * item 1

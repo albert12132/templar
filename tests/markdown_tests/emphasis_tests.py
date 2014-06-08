@@ -1,6 +1,6 @@
-from utils import TemplarTest, main
+from utils import MarkdownTest, main
 
-class EmTest(TemplarTest):
+class EmTest(MarkdownTest):
     def testBasic(self):
         text = "*This is an em*"
         expect = "<p><em>This is an em</em></p>"
@@ -34,7 +34,7 @@ class EmTest(TemplarTest):
         expect = "<p>This <em>is an em_ here</em></p>"
         self.assertMarkdown(text, expect)
 
-class StrongTest(TemplarTest):
+class StrongTest(MarkdownTest):
     def testBasic(self):
         text = "**This is a strong**"
         expect = "<p><strong>This is a strong</strong></p>"
@@ -75,7 +75,7 @@ class StrongTest(TemplarTest):
         expect = "<p>This <strong>is a strong* here</strong></p>"
         self.assertMarkdown(text, expect)
 
-class StrongEmTest(TemplarTest):
+class StrongEmTest(MarkdownTest):
     def testBasic(self):
         text = "***This is a strong em***"
         expect = "<p><strong><em>This is a strong em</em></strong></p>"
@@ -100,7 +100,7 @@ class StrongEmTest(TemplarTest):
         expect = "<p>This <strong><em>is a strong em* here</em></strong></p>"
         self.assertMarkdown(text, expect)
 
-class CodeTest(TemplarTest):
+class CodeTest(MarkdownTest):
     def testBasic(self):
         text = "This is a `code tag`"
         expect = "<p>This is a <code>code tag</code></p>"

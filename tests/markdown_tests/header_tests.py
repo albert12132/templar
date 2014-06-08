@@ -1,7 +1,7 @@
-from utils import TemplarTest, main
+from utils import MarkdownTest, main
 from markdown import convert, Markdown
 
-class SetextTest(TemplarTest):
+class SetextTest(MarkdownTest):
     def testBasic(self):
         simple = """
         Hello World!
@@ -170,7 +170,7 @@ class SetextTest(TemplarTest):
         """
         self.assertMarkdown(text, expect)
 
-class AtxHeaders(TemplarTest):
+class AtxHeaders(MarkdownTest):
     def testBasic(self):
         title = "Title Here"
         expect = '<h{0} id="title-here">Title Here</h{0}>'
@@ -230,7 +230,7 @@ class AtxHeaders(TemplarTest):
         """
         self.assertMarkdown(text, expect)
 
-class SlugTests(TemplarTest):
+class SlugTests(MarkdownTest):
     def testBasic(self):
         simple = """
         Hello World!
