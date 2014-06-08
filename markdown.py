@@ -240,7 +240,7 @@ re_list = r"""
         .+?                     # list item
         \n*?                    # capture trailing newlines
         (?=                     # end of a list item
-            \n\n(?![ ]{4}) |    # blank line without 4 spaces after
+            \n\n(?![ ]{2}) |    # blank line without 2 spaces after
             \Z                  # or end of string
         )
         \n*

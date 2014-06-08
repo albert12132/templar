@@ -60,6 +60,45 @@ class ListTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testNestedParagraphs(self):
+        text = """
+        * This here is the first
+          paragraph in the list item
+
+          This is the second paragraph.
+          It contains two leading spaces
+        * item 2
+        """
+        expect = """
+        <ul>
+          <li><p>This here is the first
+          paragraph in the list item</p>
+
+          <p>This is the second paragraph.
+          It contains two leading spaces</p></li>
+          <li>item 2</li>
+        </ul>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        * This here is the first
+          paragraph in the list item
+
+         This is not in the list, because it only has
+         1 leading space
+        """
+        expect = """
+        <ul>
+          <li>This here is the first
+          paragraph in the list item</li>
+        </ul>
+
+        <p>This is not in the list, because it only has
+         1 leading space</p>
+        """
+        self.assertMarkdown(text, expect)
+
     def testNestedList(self):
         text = """
         * item 1
