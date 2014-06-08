@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+from collections import OrderedDict
 from markdown import convert
 
 ##############
@@ -49,7 +50,7 @@ def link(text):
     text -- str; the text after resolving all include tags. Any block
             tags that are left over are preserved in text.
     """
-    return substitute_links(text, {}, '')
+    return substitute_links(text, OrderedDict(), '')
 
 def retrieve_blocks(text):
     """Strip block tags from text and return a mapping of block
