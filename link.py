@@ -15,10 +15,11 @@ def link(text):
 
         <include path/to/file.ext>
 
-    The file can be of any filetype, and include tags can have paths
-    to any filetype (even filetypes that are different from the
-    original source file). Using the above syntax, all of the contents
-    of the included file will be substituted for the tag.
+    The file can be of any filetype (as long as it is plaintext), and
+    <include> tags can have paths to any filetype (even filetypes that
+    are different from the original source file). Using the above
+    syntax, all of the contents of the included file will be
+    substituted for the tag.
 
     There is an alternate syntax:
 
@@ -41,6 +42,9 @@ def link(text):
         <include path/to/file.ext:block1>
         <include path/to/file.ext:block2>
         <include path/to/file.ext:block3>
+
+    Block names that are matched by the regular expression will be
+    included in the order that they were defined in file.ext.
 
     Note: the regular expression must match the entire block name. For
     example, if blockRegex was "block\d", it would not match a block
@@ -72,7 +76,7 @@ def substitutions(text, subs):
     text -- str; original source text
     subs -- list of 2-tuples (regex, sub); regex is either a str or a
             RegexObject, which defines the pattern. sub is a
-            substitution function, as used by re.sub
+            substitution function or a string, as used by re.sub
 
     The (regex, sub) pairs will be applied in the order that they
     appear in subs. This means it is the responsibility of the caller
@@ -133,8 +137,22 @@ re_include = re.compile(r"""
 \s*>
 """, re.X)
 def substitute_links(text, cache, base_dir):
-    """Create a function that acts as a substitution function for the
-    include-tag regex.
+    """Substitutes all <include> links in text relative to base_dir,
+    using and updating cache as a reference for blocks.
+
+    PARAMETERS:
+    text     -- str; text to link
+    cache    -- dict; mapping of block names to block contents. Block
+                names take the form "filename:blockname"
+    base_dir -- str; base directory for resolving relative filepaths
+
+    NOTE:
+    The cache parameter is updated in the mutually recursive call.
+    It is best to pass in an empty dictionary when calling this
+    function for the first time.
+
+    RETURNS:
+    linked_text -- str; text with all <include>s resolved
     """
     def link_sub(match):
         filename = match.group(2)
@@ -150,14 +168,43 @@ def substitute_links(text, cache, base_dir):
     return re_include.sub(link_sub, text)
 
 def retrieve_and_link(filename, cache):
+    """Retrieves the contents found in filename and recursively
+    resolves links in those contents, updating cache with blocks found
+    in the contents.
+
+    PARAMETERS:
+    filename -- str; name of file to retrieve
+    cache    -- dict; mapping of block names to block contents. Block
+                names take the form "filename:blockname"
+
+    RETURNS:
+    contents -- str; linked results of file contents
+    """
     text = file_read(filename)
-    # with open(filename, 'r') as f:
-    #     text = f.read()
     text = substitute_links(text, cache, os.path.dirname(filename))
     cache_blocks(filename, text, cache)
     return text
 
 def resolve_include_regex(regex, cache, filename):
+    """Resolves an <include> that contains a regular expression.
+
+    PARAMETERS:
+    regex    -- str or RegexObject; regular expression for block names.
+                regex must match the entire block name
+    cache    -- dict; mapping of block names to block contents. Block
+                names take the form "filename:blockname"
+    filename -- str; file in which to look for blocks
+
+    NOTE:
+    The order in which this function matches blocks depends entirely
+    on the __iter__ function of the cache. Built-in dictionaries have
+    an arbitrary ordering. For ordering, use of an OrderedDict is
+    suggested.
+
+    RETURNS:
+    text -- str; all <include>s linked together, with only a newline
+            separating them
+    """
     contents = []
     for block in cache:
         if ':' not in block:
@@ -170,21 +217,21 @@ def resolve_include_regex(regex, cache, filename):
 
 
 re_block = re.compile(r"""
-[^\n]*
+[^\n]*      # strip out extra leading characters
 <\s*
     block
     \s+
-    (.+?)       # \1 is block name
+    (.+?)   # \1 is block name
 \s*>
-[^\n]*\n
-(.*?)           # \2 is block contents
-\n[^\n]*
-</\s*        # forward slash to denote closing tag
+[^\n]*\n    # strip out extra ending characters
+(.*?)       # \2 is block contents
+\n[^\n]*    # strip out extra leading characters
+</\s*       # forward slash to denote closing tag
     block
     \s+
     \1
 \s*>
-[^\n]*
+[^\n]*      # strip out extra ending characters
 """, re.S | re.X)
 # TODO refactor
 re_open_block = re.compile(r"""
@@ -218,14 +265,39 @@ def cache_blocks(filename, text, cache):
     cache[filename + ':all'] = text
     return text
 
+##################
+# File Utilities #
+##################
+
 def file_exists(filename):
+    """Checks if a file exists relative to os.getcwd().
+
+    NOTE:
+    This function exists to make test injection easier.
+
+    RETURNS:
+    bool; True if filename exists
+    """
     return os.path.exists(filename)
 
 def file_read(filename):
+    """Reads contents of a specified file.
+
+    NOTE:
+    This function exists to make test injection easier.
+
+    RETURNS:
+    text -- str; contents of file
+    """
     with open(filename, 'r') as f:
         return f.read()
 
 def file_write(filename, text):
+    """Writes text to a specified file.
+
+    NOTE:
+    This function exists to make test injection easier.
+    """
     with open(filename, 'w') as f:
         f.write(text)
 
@@ -250,21 +322,12 @@ def main(args, configs):
         print(args.source + ' is not a valid file')
         exit(1)
     result = link(file_read(args.source))
-    # with open(args.source, 'r') as f:
-    #     result = link(f.read())
     if args.markdown:
         result = convert(result)
     result = substitutions(result, configs.get('SUBSTITUTIONS', []))
     result, cache = retrieve_blocks(result)
-    # if args.cache:
-    #     result, cache = retrieve_blocks(result)
-    #     print('--- Cache keys ---')
-    #     for k in sorted(cache):
-    #         print(k)
     if args.destination:
         file_write(args.destination, result)
-        # with open(args.destination, 'w') as f:
-        #     f.write(result)
         print('Result can be found in ' + args.destination)
     else:
         print('--- BEGIN RESULT ---')
@@ -272,7 +335,5 @@ def main(args, configs):
         print('--- END RESULT ---')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    cmd_options(parser)
-    main(parser.parse_args())
+    print('Usage: python3 __main__.py link ...')
 
