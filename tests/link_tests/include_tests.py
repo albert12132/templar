@@ -92,6 +92,29 @@ class IncludeTest(LinkTest):
         """
         self.assertLink(text, expect, files)
 
+    def testNestedIncludes(self):
+        text = """
+        <include fileA>
+        """
+        files = {
+            'fileA': """
+            <include fileB>
+            """,
+            'fileB': """
+            <include fileC>
+            """,
+            'fileC': """
+            <include fileD>
+            """,
+            'fileD': """
+            Target!
+            """,
+        }
+        expect = """
+        Target!
+        """
+        self.assertLink(text, expect, files)
+
     def testBlock(self):
         text = """
         <include test.md:blockA>
