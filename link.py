@@ -145,9 +145,7 @@ def substitute_links(text, cache, base_dir):
         if not regex:
             result = cache[filename + ':all']
         else:
-            result = '\n'.join([cache[block] for block in cache
-                               if re.match('^' + regex + '$',
-                                      block.split(':')[-1])])
+            result = resolve_include_regex(regex, cache, filename)
         return add_whitespace(result, match.group(1))
     return re_include.sub(link_sub, text)
 
@@ -158,6 +156,18 @@ def retrieve_and_link(filename, cache):
     text = substitute_links(text, cache, os.path.dirname(filename))
     cache_blocks(filename, text, cache)
     return text
+
+def resolve_include_regex(regex, cache, filename):
+    contents = []
+    for block in cache:
+        if ':' not in block:
+            continue
+        block_file, block_name = block.split(':', 1)
+        if re.match('^' + regex + '$', block_name) and \
+                filename == block_file:
+            contents.append(cache[block])
+    return '\n'.join(contents)
+
 
 re_block = re.compile(r"""
 [^\n]*
