@@ -218,24 +218,6 @@ def compile_inheritance(templates):
     templates.append(super_temp)
     return compile_inheritance(templates)
 
-def get_attrs(filename):
-    """Retrieves variable bindings from CONTENT.
-
-    PARAMETERS:
-    content -- the name of a Markdown file
-    """
-    if not filename:
-        attrs = {}
-    else:
-        with open(filename, 'r') as f:
-            text = link.link(f.read())
-        attrs = link.retrieve_blocks(text)
-    # TODO scrape headers
-    # TODO Configs
-    # for k, v in CONFIGS.items():
-    #     attrs[k] = v
-    return attrs
-
 
 ##########################
 # COMMAND LINE UTILITIES #
@@ -275,6 +257,10 @@ def main(args, configs):
                     result,
                     configs['header_regex'],
                     configs['header_translate']))
+            for import_stmt in (
+                    'from datetime import datetime',
+                    )
+                exec(import_stmt, configs)
         for k, v in cache.items():
             configs[k] = v
 
