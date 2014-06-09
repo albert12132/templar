@@ -259,7 +259,7 @@ def main(args, configs):
                     configs['header_translate']))
             for import_stmt in (
                     'from datetime import datetime',
-                    )
+                    ):
                 exec(import_stmt, configs)
         for k, v in cache.items():
             configs[k] = v
