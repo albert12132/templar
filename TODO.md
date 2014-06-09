@@ -1,28 +1,18 @@
 TODO
 ====
 
-Main
-----
-
-* better path configuration for finding config.py
-
 Markdown
 --------
 
-* add html block tags
+* add html5 block tags
 * refactor and document
-
-### Bugs
-
-* Headers erroneously being included in paragraphs if no newlines
-  separating
 
 Link
 ----
 
 * refactor and document
 
-Testing
+Compile
 -------
 
-* add tests/testing framework (using unittest)
+* add tests
