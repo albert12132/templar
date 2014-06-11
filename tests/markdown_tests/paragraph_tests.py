@@ -159,7 +159,7 @@ class HorizontalRuleTest(MarkdownTest):
         expect = """
         <p>paragraph here</p>
 
-        <p>--</p>
+        <p>&mdash;</p>
 
         <p>Horizontal rule above</p>
         """
@@ -181,8 +181,45 @@ class HorizontalRuleTest(MarkdownTest):
         """
         self.assertMarkdownNotEqual(text, expect)
 
-class EscapeTest(MarkdownTest):
-    def testBasic(self):
+
+class MiscellaneousTest(MarkdownTest):
+    def testEmDash(self):
+        text = """
+        This is an example -- of an em dash
+        """
+        expect = """
+        <p>This is an example &mdash; of an em dash</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testEmDashNoWhitespace(self):
+        text = """
+        This is an example--of an em dash
+        """
+        expect = """
+        <p>This is an example&mdash;of an em dash</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testNotAnEmDash(self):
+        text = """
+        This is not an em dash
+        --
+        """
+        expect = """
+        <h2 id="this-is-not-an-em-dash">This is not an em dash</h2>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        This is not --- an em dash
+        """
+        expect = """
+        <p>This is not --- an em dash</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testEscapes(self):
         self.assertMarkdown(r'\\', r"<p>\</p>")
         self.assertMarkdown(r'\`', r"<p>`</p>")
         self.assertMarkdown(r'\*', r"<p>*</p>")
@@ -195,6 +232,7 @@ class EscapeTest(MarkdownTest):
         self.assertMarkdown(r'\-', r"<p>-</p>")
         self.assertMarkdown(r'\.', r"<p>.</p>")
         self.assertMarkdown(r'\!', r"<p>!</p>")
+
 
 if __name__ == '__main__':
     main()

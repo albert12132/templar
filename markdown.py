@@ -675,6 +675,7 @@ def paragraph_sub(match):
 
 def postprocess(text):
     text = slug_re.sub(slug_sub, text)
+    text = re.sub(r'(?<=[^-])--(?=[^-])', '&mdash;', text)
     text = re.sub(r'^[ \t]+$', '', text, flags=re.M)
     text = text.strip()
     return text
