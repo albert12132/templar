@@ -471,6 +471,7 @@ def hash_reference_links(text, hashes, markdown_obj):
         ref = match.group(3).strip().lower()
         if not ref:
             ref = content.strip().lower()
+        ref = ref.replace('\n', ' ')
         link, title = markdown_obj.references[ref]
         if title:
             title = ' title="{0}"'.format(title)

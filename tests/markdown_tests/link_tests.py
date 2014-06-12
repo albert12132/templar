@@ -243,5 +243,29 @@ class ReferenceTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testNewline(self):
+        text = """
+        [link
+        here][]
+
+        [link here]: path/to/url
+        """
+        expect = """
+        <p><a href="path/to/url">link
+        here</a></p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        [link here][ref
+        id]
+
+        [ref id]: path/to/url
+        """
+        expect = """
+        <p><a href="path/to/url">link here</a></p>
+        """
+        self.assertMarkdown(text, expect)
+
 if __name__ == '__main__':
     main()
