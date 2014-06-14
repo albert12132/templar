@@ -61,6 +61,7 @@ class Markdown:
 def preprocess(text):
     text, variables = get_variables(text)
     text, references = get_references(text)
+    text = remove_pandoc_comments(text)
     text = handle_whitespace(text)
     return text, variables, references
 
@@ -170,6 +171,14 @@ def get_references(text):
         references[ref_id] = (link, title)
     text = re_references.sub('', text)
     return text, references
+
+re_pandoc_comment = re.compile(r"""
+<!---
+.*?
+-->
+""", re.S | re.X)
+def remove_pandoc_comments(text):
+    return re_pandoc_comment.sub('', text)
 
 
 ######################
@@ -676,10 +685,20 @@ def paragraph_sub(match):
 
 def postprocess(text):
     text = slug_re.sub(slug_sub, text)
-    text = re.sub(r'(?<=[^-])--(?=[^-])', '&mdash;', text)
+    text = re_em_dash.sub(em_dash_sub, text)
     text = re.sub(r'^[ \t]+$', '', text, flags=re.M)
     text = text.strip()
     return text
+
+re_em_dash = re.compile(r"""
+(?<=[^-])   # should not have preceding hyphens
+(?<!<!)     # should not be an HTML comment
+--
+(?=[^-])    # should not have trailing hyphens
+(?!>)       # should not be an HTML comment
+""", re.X | re.S)
+def em_dash_sub(match):
+    return '&mdash;'
 
 slug_re = re.compile(r"""
     <

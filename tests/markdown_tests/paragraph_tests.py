@@ -181,7 +181,6 @@ class HorizontalRuleTest(MarkdownTest):
         """
         self.assertMarkdownNotEqual(text, expect)
 
-
 class MiscellaneousTest(MarkdownTest):
     def testEmDash(self):
         text = """
@@ -232,6 +231,55 @@ class MiscellaneousTest(MarkdownTest):
         self.assertMarkdown(r'\-', r"<p>-</p>")
         self.assertMarkdown(r'\.', r"<p>.</p>")
         self.assertMarkdown(r'\!', r"<p>!</p>")
+
+    def testComment(self):
+        text = """
+        <!-- HTML comment -->
+        """
+        expect = """
+        <!-- HTML comment -->
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        Some stuff <!-- this is a comment --> here
+        """
+        expect = """
+        <p>Some stuff <!-- this is a comment --> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        Some stuff <!--
+        this is
+        a comment --> here
+        """
+        expect = """
+        <p>Some stuff <!--
+        this is
+        a comment --> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testPandocComment(self):
+        text = """
+        <!--- pandoc comment -->
+        Some stuff here
+        """
+        expect = """
+        <p>Some stuff here</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        <!---
+        pandoc comment -->
+        Some stuff here
+        """
+        expect = """
+        <p>Some stuff here</p>
+        """
+        self.assertMarkdown(text, expect)
 
 
 if __name__ == '__main__':
