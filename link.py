@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+import sys
 from collections import OrderedDict
 
 from markdown import convert
@@ -314,13 +315,17 @@ def cmd_options(parser):
                         help="Store result in destination file")
     parser.add_argument('-m', '--markdown', action='store_true',
                         help="Use Markdown conversion")
+    parser.add_argument('-q', '--quiet', action='store_true',
+                        help="Suppresses extraneous output")
 
 def main(args, configs):
     if not os.path.exists(args.source):
-        print('File ' + args.source + ' does not exist.')
+        print('File ' + args.source + ' does not exist.',
+              file=sys.stderr)
         exit(1)
     elif not os.path.isfile(args.source):
-        print(args.source + ' is not a valid file')
+        print(args.source + ' is not a valid file',
+              file=sys.stderr)
         exit(1)
     result = link(file_read(args.source))
     if args.markdown:
@@ -331,9 +336,11 @@ def main(args, configs):
         file_write(args.destination, result)
         print('Result can be found in ' + args.destination)
     else:
-        print('--- BEGIN RESULT ---')
+        if not args.quiet:
+            print('--- BEGIN RESULT ---')
         print(result)
-        print('--- END RESULT ---')
+        if not args.quiet:
+            print('--- END RESULT ---')
 
 if __name__ == '__main__':
     print('Usage: python3 __main__.py link ...')
