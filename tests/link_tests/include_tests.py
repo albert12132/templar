@@ -268,6 +268,30 @@ class IncludeTest(LinkTest):
         """
         self.assertLink(text, expect, files)
 
+    def testBlockRegexExcludeAll(self):
+        text = """
+        <include test.md:.*>
+        """
+        files = {
+            'test.md': """
+            <block block0>
+            Zero
+            </block block0>
+            <block blockA>
+            A
+            </block blockA>
+            <block block2>
+            Two
+            </block block2>
+            """,
+        }
+        expect = """
+        Zero
+        A
+        Two
+        """
+        self.assertLink(text, expect, files)
+
     def testExplicitAll(self):
         text = """
         <include test.md:all>

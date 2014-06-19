@@ -213,8 +213,11 @@ def resolve_include_regex(regex, cache, filename):
             continue
         block_file, block_name = block.split(':', 1)
         if re.match('^' + regex + '$', block_name) and \
-                filename == block_file:
+                filename == block_file and\
+                block_name != 'all':
             contents.append(cache[block])
+    if regex == 'all' and not contents:
+        contents.append(cache[filename + ':all'])
     return '\n'.join(contents)
 
 
