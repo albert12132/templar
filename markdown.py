@@ -191,6 +191,7 @@ def apply_hashes(text, markdown_obj):
     text = hash_lists(text, hashes, markdown_obj)
     text = hash_blockquotes(text, hashes, markdown_obj)
     text = hash_codeblocks(text, hashes)
+    text = hash_tables(text, hashes, markdown_obj)
     text = hash_codes(text, hashes)
     text = hash_inline_links(text, hashes)
     text = hash_reference_links(text, hashes, markdown_obj)
@@ -377,6 +378,49 @@ def hash_blockquotes(text, hashes, markdown_obj):
         return '\n\n' + hashed + '\n\n'
     return re_blockquote.sub(sub, text)
 
+re_table = re.compile(r"""
+    [^\n]*\|[^\n]*\n
+    (?:
+        [:\t -|]*\|[:\t -|]*
+    )
+    (?:\n[^\n]*\|[^\n]*)*
+""", re.S | re.X)
+def hash_tables(text, hashes, markdown_obj):
+    def sub(match):
+        table = '<table>\n'
+        aligns = []
+        for i, line in enumerate(match.group(0).split('\n')):
+            if i == 1:
+                assert set(line).issubset(set(' :|-\n'))
+                for col in line.strip('|').split('|'):
+                    if col.startswith(':') and col.endswith(':'):
+                        aligns.append('center')
+                    elif col.startswith(':'):
+                        aligns.append('left')
+                    elif col.endswith(':'):
+                        aligns.append('right')
+                    else:
+                        aligns.append('')
+                continue
+            row = ''
+            for col, cell in enumerate(line.strip('|').split('|')):
+                cell = markdown_obj.convert(cell.strip())
+                cell = cell.replace('<p>', '').replace('</p>', '')
+                if col < len(aligns) and aligns[col]:
+                    td_align = ' align="' + aligns[col] + '"'
+                else:
+                    td_align = ''
+                row += '    <t{0}{1}>{2}</t{0}>\n'.format(
+                        'h' if i == 0 else 'd',
+                        td_align,
+                        cell)
+            table += '  <tr>\n' + row + '  </tr>\n'
+        table += '</table>'
+        hashed = hash_text(table, 'table')
+        hashes[hashed] = table
+        return '\n\n' + hashed + '\n\n'
+    return re_table.sub(sub, text)
+
 re_code = re.compile(r"""
     (?<!\\)     # avoid escaped ticks
     (`+)        # \1 is opening ticks (could be multiple ticks)
@@ -522,7 +566,8 @@ re_hash = re.compile(r"""
         link        |
         tag         |
         list        |
-        pre
+        pre         |
+        table
     )
     -[\da-f]+-          # hash
     \1                  # closing hash type
@@ -652,7 +697,8 @@ avoids = r"""
         block       |
         tag         |
         pre         |
-        list
+        list        |
+        table
     )
     -[\da-f]+
     -\1
