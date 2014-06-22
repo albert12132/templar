@@ -16,11 +16,13 @@ def configure_path():
     while not templar.startswith(cwd):
         paths.append(cwd)
         cwd = os.path.dirname(cwd)
-    paths.append(cwd)
-    import config
-    for i in range(len(paths)):
-        sys.path.insert(0, paths[-i-1])
-        imp.reload(config)
+    root = cwd
+    paths.append(root)
+    sys.path.insert(0, root)
+    for path in paths:
+        path = path.replace(root, '').replace('/', '.') + '.config'
+        path = path.strip('.')
+        config = importlib.import_module(path)
         extract_configs(config, configs)
     return configs
 
