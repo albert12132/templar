@@ -60,6 +60,50 @@ class SubstitutionTest(LinkTest):
         """
         self.assertSubstitution(text, expect, subs)
 
+    def testConditions(self):
+        text = """
+        <solution>
+        """
+        def sub(m):
+            return '<h1>Solution</h1>'
+        def cond(args):
+            return 'solution' in args
+        subs = [
+            (r"<solution>", sub, cond),
+        ]
+        expect = """
+        <h1>Solution</h1>
+        """
+        self.assertSubstitution(text, expect, subs, args=['solution'])
+        self.assertSubstitution(text, text, subs, args=[])
+
+    def testMultipleConditions(self):
+        text = """
+        <solution>
+        <explanation>
+        """
+        def sub_sol(m):
+            return '<h1>Solution</h1>'
+        def sub_expl(m):
+            return '<h1>Explanation</h1>'
+        def cond(args):
+            return 'solution' in args
+        subs = [
+            (r"<solution>", sub_sol, cond),
+            (r"<explanation>", sub_expl, lambda args: not cond(args)),
+        ]
+        expect = """
+        <h1>Solution</h1>
+        <explanation>
+        """
+        self.assertSubstitution(text, expect, subs, args=['solution'])
+
+        expect = """
+        <solution>
+        <h1>Explanation</h1>
+        """
+        self.assertSubstitution(text, expect, subs, args=[])
+
 class ScrapeHeadersTest(LinkTest):
     def testBasic(self):
         text = """

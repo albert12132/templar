@@ -70,7 +70,7 @@ def retrieve_blocks(text):
     cache = {}
     return cache_blocks('', text, cache), cache
 
-def substitutions(text, subs):
+def substitutions(text, subs, args):
     """Apply regular expression substitutions defined for custom
     patterns.
 
@@ -87,8 +87,11 @@ def substitutions(text, subs):
     RETURNS:
     text -- str; the text after applying all substitutions in subs
     """
-    for regex, sub in subs:
-        text = re.sub(regex, sub, text)
+    if not args:
+        args = []
+    for regex, sub, *conditions in subs:
+        if all(cond(args) for cond in conditions):
+            text = re.sub(regex, sub, text)
     return text
 
 def scrape_headers(text, regex, translate):
@@ -320,6 +323,8 @@ def cmd_options(parser):
                         help="Use Markdown conversion")
     parser.add_argument('-q', '--quiet', action='store_true',
                         help="Suppresses extraneous output")
+    parser.add_argument('-c', '--conditions', action='append',
+                        help="Specify conditions for substitutions")
 
 def main(args, configs):
     if not os.path.exists(args.source):
@@ -333,7 +338,9 @@ def main(args, configs):
     result = link(file_read(args.source))
     if args.markdown:
         result = convert(result)
-    result = substitutions(result, configs.get('SUBSTITUTIONS', []))
+    result = substitutions(result,
+                           configs.get('SUBSTITUTIONS', []),
+                           args.conditions)
     result, cache = retrieve_blocks(result)
     if args.destination:
         file_write(args.destination, result)

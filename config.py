@@ -29,6 +29,7 @@ VARIABLES = {
 SUBSTITUTIONS = [
     # Add substitutinos of the form
     # (regex, sub_function),
+    # (regex, sub_function, condition),
 ]
 
 

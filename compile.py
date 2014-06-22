@@ -231,6 +231,8 @@ def cmd_options(parser):
                         help='The destination filepath')
     parser.add_argument('-m', '--markdown', action='store_true',
                         help='Use Markdown conversion on source')
+    parser.add_argument('-c', '--conditions', action='append',
+                        help='Specify conditions for substitutions')
 
 def main(args, configs):
     if args.source:
@@ -247,7 +249,9 @@ def main(args, configs):
             for k, v in markdown_obj.variables.items():
                 configs[k] = v
             result = markdown_obj.text
-        result = link.substitutions(result, configs.get('SUBSTITUTIONS', []))
+        result = link.substitutions(result,
+                                    configs.get('SUBSTITUTIONS', []),
+                                    args.conditions)
         result, cache = link.retrieve_blocks(result)
         if 'table_of_contents' in configs and \
                 'header_regex' in configs and \

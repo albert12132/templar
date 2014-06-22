@@ -93,11 +93,13 @@ class LinkTest(TemplarTest):
         self.assertEqual(result, output)
         self.assertDictEqual(expect_cache, cache)
 
-    def assertSubstitution(self, src, output, subs, files=None):
+    def assertSubstitution(self, src, output, subs, files=None, args=None):
         if files:
             self.register_read(files)
+        if not args:
+            args = []
         result = link.link(self.stripLeadingWhitespace(src)) + '\n'
-        result = link.substitutions(result, subs)
+        result = link.substitutions(result, subs, args)
         output = self.stripLeadingWhitespace(output) + '\n'
         self.assertEqual(result, output)
 
