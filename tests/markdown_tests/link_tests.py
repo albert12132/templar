@@ -334,5 +334,42 @@ class FootnoteTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testList(self):
+        text = """
+        * Text here.[^id]
+
+        [^id]: some text here
+        """
+        expect = """
+        <ul>
+          <li>Text here.<sup><a href="#fnref-1">1</a></sup></li>
+        </ul>
+
+        <div id="footnotes">
+          <ol>
+            <li id="fnref-1"><p>some text here</p></li>
+          </ol>
+        </div>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testBlockquote(self):
+        text = """
+        > Text here.[^id]
+
+        [^id]: some text here
+        """
+        expect = """
+        <blockquote><p>Text here.<sup><a href="#fnref-1">1</a></sup></p></blockquote>
+
+        <div id="footnotes">
+          <ol>
+            <li id="fnref-1"><p>some text here</p></li>
+          </ol>
+        </div>
+        """
+        self.assertMarkdown(text, expect)
+
+
 if __name__ == '__main__':
     main()

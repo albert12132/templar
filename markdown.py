@@ -18,15 +18,15 @@ class Markdown:
         if pre_hook:
             text = pre_hook(text)
         self.text, self.variables, self.references, self.footnotes = preprocess(text, self)
-        self.text = self.convert(self.text).strip()
+        self.text = self.convert(self.text, footnotes=True).strip()
         if post_hook:
             self.text = post_hook(self.text)
 
-    def convert(self, text):
+    def convert(self, text, footnotes=False):
         text, hashes = apply_hashes(text, self)
         text = apply_substitutions(text)
         text = unhash(text, hashes)
-        text = postprocess(text, self)
+        text = postprocess(text, self, footnotes)
         return text
 
     def __add__(self, other):
@@ -802,12 +802,13 @@ def paragraph_sub(match):
 # Post-processing #
 ###################
 
-def postprocess(text, markdown_obj):
+def postprocess(text, markdown_obj, footnotes=False):
     text = slug_re.sub(slug_sub, text)
     text = re_em_dash.sub(em_dash_sub, text)
     text = re.sub(r'^[ \t]+$', '', text, flags=re.M)
     text = text.strip()
-    text += generate_footnotes(markdown_obj)
+    if footnotes:
+        text += generate_footnotes(markdown_obj)
     return text
 
 re_em_dash = re.compile(r"""
