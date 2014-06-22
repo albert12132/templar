@@ -277,6 +277,8 @@ class FootnoteTest(MarkdownTest):
         expect = """
         <p>Text here.<sup><a href="#fnref-1">1</a></sup></p>
 
+        <hr/>
+
         <div id="footnotes">
           <ol>
             <li id="fnref-1"><p>some text here</p></li>
@@ -295,6 +297,8 @@ class FootnoteTest(MarkdownTest):
         expect = """
         <p>Text here.<sup><a href="#fnref-1">1</a></sup>
         Another <sup><a href="#fnref-1">1</a></sup> reference.</p>
+
+        <hr/>
 
         <div id="footnotes">
           <ol>
@@ -315,6 +319,8 @@ class FootnoteTest(MarkdownTest):
         expect = """
         <p>Text here.<sup><a href="#fnref-1">1</a></sup>
         Another <sup><a href="#fnref-2">2</a></sup> reference.</p>
+
+        <hr/>
 
         <div id="footnotes">
           <ol>
@@ -345,6 +351,8 @@ class FootnoteTest(MarkdownTest):
           <li>Text here.<sup><a href="#fnref-1">1</a></sup></li>
         </ul>
 
+        <hr/>
+
         <div id="footnotes">
           <ol>
             <li id="fnref-1"><p>some text here</p></li>
@@ -361,6 +369,8 @@ class FootnoteTest(MarkdownTest):
         """
         expect = """
         <blockquote><p>Text here.<sup><a href="#fnref-1">1</a></sup></p></blockquote>
+
+        <hr/>
 
         <div id="footnotes">
           <ol>

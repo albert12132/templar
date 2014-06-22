@@ -853,7 +853,7 @@ def generate_footnotes(markdown_obj):
     footnotes = markdown_obj.footnotes
     if not footnotes:
         return ''
-    text = '\n\n<div id="footnotes">\n  <ol>\n'
+    text = '\n\n<hr/>\n\n<div id="footnotes">\n  <ol>\n'
     for i, footnote in enumerate(footnotes.values()):
         text += '    <li id="fnref-{0}">{1}</li>\n'.format(i+1, convert(footnote))
     text += '  </ol>\n</div>'
