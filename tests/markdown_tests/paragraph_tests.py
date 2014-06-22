@@ -48,6 +48,23 @@ class ParagraphTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testLineBreak(self):
+        text = """
+        Stuff This text is text with a line break  
+        so it is still a paragraph  
+
+        Another line break!
+        """
+        expect = """
+        <p>Stuff This text is text with a line break
+        <br/>
+        so it is still a paragraph
+        <br/>
+
+        Another line break!</p>
+        """
+        self.assertMarkdown(text, expect)
+
 class HorizontalRuleTest(MarkdownTest):
     def testBasic(self):
         text = """

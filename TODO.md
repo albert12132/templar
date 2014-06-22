@@ -4,12 +4,9 @@ TODO
 Markdown
 --------
 
-* feature: Add line breaks with trailing two spaces
 * feature: add html5 block tags
 * feature: implement [Markdown Extra][] features:
     * special header attributes
-    * tables
-    * footnotes
 * bug: emdash should not be converted in code spans or blocks
 * task: refactor and document
 

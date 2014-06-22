@@ -790,13 +790,14 @@ paragraph_re = re.compile(r"""
 (?!%s)                  # avoid certain strings
 (.+?)                   # \1 is paragraph contents
 (?:
-    (?=\n\n)    |       # end with blank line
+    (?=(?<![ ]{2})\n\n)    |       # end with blank line
     (?=\n*\Z)           # or end of string
 )
 """ % avoids, re.S | re.X)
 def paragraph_sub(match):
     """Captures paragraphs."""
-    return '<p>{}</p>'.format(match.group(0).strip())
+    text = re.sub(r'  \n', r'\n<br/>\n', match.group(0).strip())
+    return '<p>{}</p>'.format(text)
 
 ###################
 # Post-processing #
