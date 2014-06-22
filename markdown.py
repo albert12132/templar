@@ -253,7 +253,7 @@ def hash_text(s, label):
 html_block_tags = "article|aside|audio|canvas|figcaption|figure|footer|header|hgroup|output|section|video"
 block_tags = "blockquote|div|form|hr|noscript|ol|p|pre|table"
 
-block_tags += html_block_tags
+block_tags += '|' + html_block_tags
 re_block = re.compile(r"""
 (?:\n+|\A)               # begin with newline or start of string
 (                        # \1 is entire block

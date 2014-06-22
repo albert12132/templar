@@ -21,3 +21,4 @@ Compile
 * task: add tests
 * bug: newlines in {{ .. }} expressions cause non-termination
 * feature: add conditionals and loops
+* bug: path configuration broken for python3.2

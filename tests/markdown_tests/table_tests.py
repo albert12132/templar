@@ -189,6 +189,22 @@ class TableTest(MarkdownTest):
         """
         self.assertMarkdownIgnoreWS(text, expect)
 
+    def testHtmlTable(self):
+        text = """
+        <table class="table">
+          <tr>
+            <th>header1</th>
+            <th>header2</th>
+          </tr>
+          <tr>
+            <td>content1</td>
+            <td>content2</td>
+          </tr>
+        </table>
+        """
+        expect = text
+        self.assertMarkdown(text, expect)
+
 
 
 if __name__ == '__main__':
