@@ -3,7 +3,7 @@ import link
 import markdown
 
 import argparse
-import imp
+import importlib
 import os
 import sys
 
