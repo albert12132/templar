@@ -4,9 +4,6 @@ TODO
 Markdown
 --------
 
-* feature: add html5 block tags
-* feature: implement [Markdown Extra][] features:
-    * special header attributes
 * task: refactor and document
 
 [Markdown Extra]: http://michelf.ca/projects/php-markdown/extra/#markdown-attr

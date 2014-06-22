@@ -250,7 +250,10 @@ SALT = bytes(randint(0, 1000000))
 def hash_text(s, label):
     return label + '-' + sha1(SALT + s.encode("utf-8")).hexdigest() + '-' + label
 
+html_block_tags = "article|aside|audio|canvas|figcaption|figure|footer|header|hgroup|output|section|video"
 block_tags = "blockquote|div|form|hr|noscript|ol|p|pre|table"
+
+block_tags += html_block_tags
 re_block = re.compile(r"""
 (?:\n+|\A)               # begin with newline or start of string
 (                        # \1 is entire block
@@ -746,26 +749,55 @@ atx_header_re = re.compile(r"""
     \s*
     (.*?)       # \2 is header title
     \s*
-    \#*$        # Trailing #s for aesthetics (doesn't have to match)
+    \#*\s*      # Trailing #s for aesthetics (doesn't have to match)
+    (?:
+        \{
+        (.*)    # \3 is optional id/class attributes
+        \}
+    )?
+    \s*$
 """, re.M | re.X)
 def atx_header_sub(match):
     """Substitutes atx headers (headers defined using #'s)."""
     level = len(match.group(1))
     title = match.group(2)
-    return '\n<h{0}>{1}</h{0}>\n'.format(level, title)
+
+    id_class = ''
+    ids = match.group(3) if match.group(3) else ''
+    id_match = re.search('#([\w-]+)', ids)
+    if id_match:
+        id_class += ' id="' + id_match.group(1) + '"'
+    classes = ' '.join(re.findall('\.([\w-]+)', ids))
+    if classes:
+        id_class += ' class="' + classes + '"'
+    return '\n<h{0}{2}>{1}</h{0}>\n'.format(level, title, id_class)
 
 setext_header_re = re.compile(r"""
     (?:(?<=\n)|(?<=\A))     # begin at newline
-    ([^\n]+?)                   # \1 is header title
+    ([^\n]+?)               # \1 is header title
+    [ \t]*(?:
+        \{
+        ([^\n]*)                # \2 is optional id/class attributes
+        \}
+    )?
     \n
-    (=+|-+)                 # \2 is header underline style
+    (=+|-+)                 # \3 is header underline style
     (?=\n|\Z)               # must be followed by newline
 """, re.X)
 def setext_header_sub(match):
     """Substitutes setext headers (defined with underscores)."""
     title = match.group(1)
-    level = 1 if '=' in match.group(2) else 2
-    return '\n<h{0}>{1}</h{0}>\n'.format(level, title)
+    level = 1 if '=' in match.group(3) else 2
+
+    id_class = ''
+    ids = match.group(2) if match.group(2) else ''
+    id_match = re.search('#([\w-]+)', ids)
+    if id_match:
+        id_class += ' id="' + id_match.group(1) + '"'
+    classes = ' '.join(re.findall('\.([\w-]+)', ids))
+    if classes:
+        id_class += ' class="' + classes + '"'
+    return '\n<h{0}{2}>{1}</h{0}>\n'.format(level, title, id_class)
 
 avoids = r"""
 (?:

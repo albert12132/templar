@@ -170,6 +170,16 @@ class SetextTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testOptionalId(self):
+        text = r"""
+        Header      { #test.class1 .class2 }
+        ------
+        """
+        expect = """
+        <h2 id="test" class="class1 class2">Header</h2>
+        """
+        self.assertMarkdown(text, expect)
+
 class AtxHeaders(MarkdownTest):
     def testBasic(self):
         title = "Title Here"
@@ -227,6 +237,15 @@ class AtxHeaders(MarkdownTest):
         """
         expect = """
         <h1 id="this-is-a-level-1-header">## This is a level 1 header</h1>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testOptionalId(self):
+        text = r"""
+        ### Header      { #test.class1 .class2 }
+        """
+        expect = """
+        <h3 id="test" class="class1 class2">Header</h3>
         """
         self.assertMarkdown(text, expect)
 
