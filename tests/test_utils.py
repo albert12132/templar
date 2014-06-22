@@ -6,6 +6,7 @@ import unittest
 import re
 from markdown import convert, Markdown
 import link
+import utils as utilities
 
 class TemplarTest(unittest.TestCase):
     @staticmethod
@@ -115,6 +116,7 @@ class LinkTest(TemplarTest):
     def assertHeaders(self, text, regex, translate, expect):
         self.assertEqual(link.scrape_headers(text, regex, translate),
                          expect)
+
 
 def main():
     unittest.main()

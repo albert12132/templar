@@ -87,14 +87,14 @@ def substitutions(text, subs, args):
     RETURNS:
     text -- str; the text after applying all substitutions in subs
     """
-    if not args:
-        args = []
+    if not args.conditions:
+        args.conditions = []
     for regex, sub, *conditions in subs:
         if all(cond(args) for cond in conditions):
             text = re.sub(regex, sub, text)
     return text
 
-def scrape_headers(text, regex, translate):
+def scrape_headers(text, builder):
     """Scrape headers based on a regular expression and substitution.
 
     PARAMETERS:
@@ -119,7 +119,7 @@ def scrape_headers(text, regex, translate):
                will appear in the order that the original headers
                are placed within text
     """
-    return [translate(match) for match in re.finditer(regex, text)]
+    return builder(text).result
 
 ##########
 # Linker #
@@ -340,7 +340,7 @@ def main(args, configs):
         result = convert(result)
     result = substitutions(result,
                            configs.get('SUBSTITUTIONS', []),
-                           args.conditions)
+                           args)
     result, cache = retrieve_blocks(result)
     if args.destination:
         file_write(args.destination, result)

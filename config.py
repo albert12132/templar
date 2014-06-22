@@ -1,5 +1,8 @@
 import os
 import re
+# Import various utilities from utils
+# import utils.html
+# import utils.filters
 
 # Path of the current file -- best not to change this
 FILEPATH = os.path.dirname(os.path.abspath(__file__))
@@ -34,9 +37,6 @@ SUBSTITUTIONS = [
 
 
 # Use the following to scrape "headers"
-# header_regex = re.compile(r"")
-# def header_translate(match):
-#     pass
-# def table_of_contents(headers):
-#     pass
+# TOC_BUILDER should be a subclass of utils.core.TocBuilder
+# TOC_BUILDER = utils.html.HeaderParser
 

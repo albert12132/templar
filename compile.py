@@ -251,16 +251,10 @@ def main(args, configs):
             result = markdown_obj.text
         result = link.substitutions(result,
                                     configs.get('SUBSTITUTIONS', []),
-                                    args.conditions)
+                                    args)
         result, cache = link.retrieve_blocks(result)
-        if 'table_of_contents' in configs and \
-                'header_regex' in configs and \
-                'header_translate' in configs:
-            configs['table-of-contents'] = configs['table_of_contents'](
-                link.scrape_headers(
-                    result,
-                    configs['header_regex'],
-                    configs['header_translate']))
+        if 'TOC_BUILDER' in configs:
+            configs['table-of-contents'] = link.scrape_headers(result, configs['TOC_BUILDER'])
             for import_stmt in (
                     'from datetime import datetime',
                     ):
@@ -278,6 +272,4 @@ def main(args, configs):
         print('Result can be found at ' + args.destination)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    cmd_options(parser)
-    main(parser.parse_args())
+    print('Usage: python3 __main__ compile ...')
