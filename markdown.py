@@ -4,6 +4,7 @@ import os
 import re
 from hashlib import sha1
 from random import randint
+from collections import OrderedDict
 
 ##############
 # Public API #
@@ -16,7 +17,7 @@ class Markdown:
     def __init__(self, text, pre_hook=None, post_hook=None):
         if pre_hook:
             text = pre_hook(text)
-        self.text, self.variables, self.references = preprocess(text)
+        self.text, self.variables, self.references, self.footnotes = preprocess(text, self)
         self.text = self.convert(self.text).strip()
         if post_hook:
             self.text = post_hook(self.text)
@@ -25,7 +26,7 @@ class Markdown:
         text, hashes = apply_hashes(text, self)
         text = apply_substitutions(text)
         text = unhash(text, hashes)
-        text = postprocess(text)
+        text = postprocess(text, self)
         return text
 
     def __add__(self, other):
@@ -58,12 +59,13 @@ class Markdown:
 # Pre-Processing #
 ##################
 
-def preprocess(text):
+def preprocess(text, markdown_obj):
     text, variables = get_variables(text)
+    text, footnotes = get_footnote_backreferences(text, markdown_obj)
     text, references = get_references(text)
     text = remove_pandoc_comments(text)
     text = handle_whitespace(text)
-    return text, variables, references
+    return text, variables, references, footnotes
 
 TAB_SIZE = 4
 
@@ -172,6 +174,47 @@ def get_references(text):
     text = re_references.sub('', text)
     return text, references
 
+re_footnote_backreferences = re.compile(r"""
+    (?:\n|\A)
+    [ ]{0,3}                # up to three spaces
+    \[\^
+        ([^\n]+?)           # \1 is footnote id
+    \]:                     # brackets followed immediately by colon
+    (                       # \2 is footnote contents
+        (?:.*?)
+        (?:\n[ ]{4}.*?)*
+    )
+    (?=\n|\Z)
+""", re.X | re.S)
+def get_footnote_backreferences(text, markdown_obj):
+    """Retrieves all footnote backreferences within the text.
+
+    Fotnote backreferences can be defined anywhere in the text, and
+    look like this:
+
+        [^id]: text
+
+    The corresponding footnote reference can then be placed anywhere in
+    the text
+
+        This is some text.[^id]
+
+    Footnote IDs are case insensitive. Footnote references are also
+    removed from the text after they have been retrieved.
+
+    RETURNS:
+    text       -- str; text with all link labels removed
+    references -- dict; link ids to (URL, title), where title is the
+                  empty string if it is omitted.
+    """
+    footnotes = OrderedDict()
+    for footnote_id, footnote in re_footnote_backreferences.findall(text):
+        footnote_id = re.sub(r'<(.*?)>', r'\1', footnote_id).lower().strip()
+        footnote = re.sub(r'^[ ]{0,4}', '', footnote, flags=re.M)
+        footnotes[footnote_id] = footnote
+    text = re_footnote_backreferences.sub('', text)
+    return text, footnotes
+
 re_pandoc_comment = re.compile(r"""
 <!---
 .*?
@@ -193,7 +236,8 @@ def apply_hashes(text, markdown_obj):
     text = hash_codeblocks(text, hashes)
     text = hash_tables(text, hashes, markdown_obj)
     text = hash_codes(text, hashes)
-    text = hash_inline_links(text, hashes)
+    text = hash_footnote_reference(text, hashes, markdown_obj)
+    text = hash_inline_links(text, hashes, markdown_obj)
     text = hash_reference_links(text, hashes, markdown_obj)
     text = hash_tags(text, hashes)
     return text, hashes
@@ -449,7 +493,7 @@ def hash_codes(text, hashes):
 re_inline_link = re.compile(r"""
     (?<!\\)         # avoid escapes
     (!?)            # \1 is whether or not this is an img
-    \[([^\[\]]*?)\] # \2 is <a> text or <img> alt text
+    \[([^^\[\]]*?)\] # \2 is <a> text or <img> alt text
     \(              # captures link
         \s*
         (.*?)       # \3 is link
@@ -462,7 +506,7 @@ re_inline_link = re.compile(r"""
         \s*
     \)
 """, re.X | re.S)
-def hash_inline_links(text, hashes):
+def hash_inline_links(text, hashes, markdown_obj):
     """Hashes an <a> link or an <img> link.
 
     This function only converts inline link styles:
@@ -485,7 +529,8 @@ def hash_inline_links(text, hashes):
             result = '<img src="{0}" alt="{1}"{2}>'.format(
                     link, content, title)
         else:
-            result = '<a href="{0}"{2}>{1}</a>'.format(link, content,
+            result = '<a href="{0}"{2}>{1}</a>'.format(link,
+                    markdown_obj.convert(content).replace('<p>', '').replace('</p>', ''),
                     title)
         hashed = hash_text(result, 'link')
         hashes[hashed] = result
@@ -495,7 +540,7 @@ def hash_inline_links(text, hashes):
 re_reference_link = re.compile(r"""
     (?<!\\)             # avoid escapes
     (!?)                # \1 is whether or not link is an <img>
-    \[([^\[\]]*?)\]     # \2 is link text or img alt text
+    \[([^^\[\]]*?)\]     # \2 is link text or img alt text
     \[
         (.*?)           # \3 is reference id
     \]
@@ -532,12 +577,39 @@ def hash_reference_links(text, hashes, markdown_obj):
             result = '<img src="{0}" alt="{1}"{2}>'.format(
                     link, content, title)
         else:
-            result = '<a href="{0}"{2}>{1}</a>'.format(link, content,
+            result = '<a href="{0}"{2}>{1}</a>'.format(link,
+                    markdown_obj.convert(content).replace('<p>', '').replace('</p>', '').strip(),
                     title)
         hashed = hash_text(result, 'link')
         hashes[hashed] = result
         return hashed
     return re_reference_link.sub(sub, text)
+
+re_footnote = re.compile(r"""
+    (?<!\\)             # avoid escapes
+    \[\^([^\[\]]*?)\]   # \1 is footnote id
+""", re.X | re.S)
+def hash_footnote_reference(text, hashes, markdown_obj):
+    """Hashes a footnote [^id] reference
+
+    This function converts footnote styles:
+
+        text here[^id]
+
+    Footnotes can be defined anywhere in the Markdown text.
+    """
+    footnotes = markdown_obj.footnotes
+    numbers = {f: i+1 for i, f in enumerate(footnotes)}
+    def sub(match):
+        footnote_id = match.group(1)
+        if footnote_id not in footnotes:
+            return ''
+        number = numbers[footnote_id]
+        result = '<sup><a href="#fnref-{0}">{0}</a></sup>'.format(number)
+        hashed = hash_text(result, 'footnote')
+        hashes[hashed] = result
+        return hashed
+    return re_footnote.sub(sub, text)
 
 re_tag = re.compile(r"""<[^>]+?>""", re.S)
 def hash_tags(text, hashes):
@@ -567,7 +639,8 @@ re_hash = re.compile(r"""
         tag         |
         list        |
         pre         |
-        table
+        table       |
+        footnote
     )
     -[\da-f]+-          # hash
     \1                  # closing hash type
@@ -729,11 +802,12 @@ def paragraph_sub(match):
 # Post-processing #
 ###################
 
-def postprocess(text):
+def postprocess(text, markdown_obj):
     text = slug_re.sub(slug_sub, text)
     text = re_em_dash.sub(em_dash_sub, text)
     text = re.sub(r'^[ \t]+$', '', text, flags=re.M)
     text = text.strip()
+    text += generate_footnotes(markdown_obj)
     return text
 
 re_em_dash = re.compile(r"""
@@ -773,6 +847,18 @@ def slug_sub(match):
     slug = re.sub(r'[ \t]+', ' ', slug).strip()
     slug = slug.replace(' ', '-')
     return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
+
+def generate_footnotes(markdown_obj):
+    footnotes = markdown_obj.footnotes
+    if not footnotes:
+        return ''
+    text = '\n\n<div id="footnotes">\n  <ol>\n'
+    for i, footnote in enumerate(footnotes.values()):
+        text += '    <li id="fnref-{0}">{1}</li>\n'.format(i+1, convert(footnote))
+    text += '  </ol>\n</div>'
+    return text
+
+
 
 ##########################
 # Command-line Interface #

@@ -16,7 +16,7 @@ class LinkTest(MarkdownTest):
 
     def testWhitespace(self):
         text = "[  link here   ](path/to/url)"
-        expect = '<p><a href="path/to/url">  link here   </a></p>'
+        expect = '<p><a href="path/to/url">link here</a></p>'
         self.assertMarkdown(text, expect)
 
         text = "[link here](   path/to/url   )"
@@ -264,6 +264,73 @@ class ReferenceTest(MarkdownTest):
         """
         expect = """
         <p><a href="path/to/url">link here</a></p>
+        """
+        self.assertMarkdown(text, expect)
+
+class FootnoteTest(MarkdownTest):
+    def testBasic(self):
+        text = """
+        Text here.[^id]
+
+        [^id]: some text here
+        """
+        expect = """
+        <p>Text here.<sup><a href="#fnref-1">1</a></sup></p>
+
+        <div id="footnotes">
+          <ol>
+            <li id="fnref-1"><p>some text here</p></li>
+          </ol>
+        </div>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testMultipleReferences(self):
+        text = """
+        Text here.[^id]
+        Another [^id] reference.
+
+        [^id]: some text here
+        """
+        expect = """
+        <p>Text here.<sup><a href="#fnref-1">1</a></sup>
+        Another <sup><a href="#fnref-1">1</a></sup> reference.</p>
+
+        <div id="footnotes">
+          <ol>
+            <li id="fnref-1"><p>some text here</p></li>
+          </ol>
+        </div>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testMultipleFootnotes(self):
+        text = """
+        Text here.[^id]
+        Another [^blah] reference.
+
+        [^id]: some text here
+        [^blah]: some text here
+        """
+        expect = """
+        <p>Text here.<sup><a href="#fnref-1">1</a></sup>
+        Another <sup><a href="#fnref-2">2</a></sup> reference.</p>
+
+        <div id="footnotes">
+          <ol>
+            <li id="fnref-1"><p>some text here</p></li>
+            <li id="fnref-2"><p>some text here</p></li>
+          </ol>
+        </div>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testNoBackreference(self):
+        text = """
+        Text here.[^id]
+        """
+        expect = """
+        <p>Text here.</p>
         """
         self.assertMarkdown(text, expect)
 
