@@ -54,6 +54,10 @@ class Markdown:
     def __repr__(self):
         return self.text
 
+def escape(text):
+    text = html.escape(text)
+    text = text.replace('-', '&#' + hex(ord('-'))[1:] + ';')
+    return text
 
 ##################
 # Pre-Processing #
@@ -385,7 +389,7 @@ def hash_codeblocks(text, hashes):
     def sub(match):
         block = match.group(1).rstrip('\n')
         block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
-        block = html.escape(block)
+        block = escape(block)
         block = '<pre><code>{}</code></pre>'.format(block)
         hashed = hash_text(block, 'pre')
         hashes[hashed] = block
@@ -484,7 +488,7 @@ def hash_codes(text, hashes):
     code tag.
     """
     def sub(match):
-        code = '<code>{}</code>'.format(html.escape(match.group(2)))
+        code = '<code>{}</code>'.format(escape(match.group(2)))
         hashed = hash_text(code, 'code')
         hashes[hashed] = code
         return hashed
@@ -712,7 +716,7 @@ def emphasis_sub(match):
 auto_escape_re = re.compile(r"&(?!#[xX]?[0-9a-fA-F]+)")
 def auto_escape_sub(match):
     """Escapes ampersands (&) in normal text."""
-    return html.escape(match.group(0))
+    return escape(match.group(0))
 
 escape_re = re.compile(r"""
     \\(         # escapes are preceded by a backslash

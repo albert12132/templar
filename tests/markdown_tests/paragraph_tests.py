@@ -235,6 +235,26 @@ class MiscellaneousTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testEmDashCode(self):
+        text = """
+        This is `-- is not --` an emdash
+        """
+        expect = """
+        <p>This is <code>&#x2d;&#x2d; is not &#x2d;&#x2d;</code> an emdash</p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        stuff
+            This is not an --emdash
+        """
+        expect = """
+        <p>stuff</p>
+
+        <pre><code>This is not an &#x2d;&#x2d;emdash</code></pre>
+        """
+        self.assertMarkdown(text, expect)
+
     def testEscapes(self):
         self.assertMarkdown(r'\\', r"<p>\</p>")
         self.assertMarkdown(r'\`', r"<p>`</p>")
