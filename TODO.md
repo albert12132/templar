@@ -1,6 +1,13 @@
 TODO
 ====
 
+Main
+----
+
+* feature: add version checking and warn when running stale version
+  (have config.py store a version number; when config.py version number
+  is greater than templar version, it is stale)
+
 Markdown
 --------
 
