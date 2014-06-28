@@ -20,7 +20,7 @@ def configure_path():
     paths.append(root)
     sys.path.insert(0, root)
     for path in paths:
-        path = path.replace(root, '').replace('/', '.').replace(r'\', ' ') + '.config'
+        path = path.replace(root, '').replace('/', '.').replace('\\', '.') + '.config'
         path = path.strip('.')
         config = importlib.import_module(path)
         extract_configs(config, configs)
