@@ -4,7 +4,7 @@ import re
 import sys
 from collections import OrderedDict
 
-from markdown import convert
+from templar.markdown import convert
 
 ##############
 # Public API #

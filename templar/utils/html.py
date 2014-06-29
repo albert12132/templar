@@ -1,4 +1,4 @@
-import utils.core as core
+import templar.utils.core as core
 import re
 
 #################

@@ -12,7 +12,7 @@ import re
 import argparse
 import os
 import link
-from markdown import Markdown
+from templar.markdown import Markdown
 
 
 ##############

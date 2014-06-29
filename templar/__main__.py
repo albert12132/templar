@@ -1,6 +1,6 @@
-import compile
-import link
-import markdown
+import templar.compile as compile
+import templar.link as link
+import templar.markdown as markdown
 
 import argparse
 import importlib

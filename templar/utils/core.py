@@ -2,9 +2,7 @@ import re
 
 class TableOfContents:
     def __init__(self, text):
-        lst = [self.translate(match)
-               for match in re.finditer(self.pattern, text)]
-        self._result = self.build(lst)
+        self._text = text
 
     @property
     def pattern(self):
@@ -18,8 +16,10 @@ class TableOfContents:
 
     @property
     def result(self):
+        lst = [self.translate(match)
+               for match in re.finditer(self.pattern, self._text)]
+        self._result = self.build(lst)
         return self._result
 
     def __repr__(self):
         return self._result
-
