@@ -13,11 +13,10 @@ Markdown
 
 * task: refactor and document
 
-[Markdown Extra]: http://michelf.ca/projects/php-markdown/extra/#markdown-attr
-
 Link
 ----
 
+* Update `scrape_header` tests
 * task: refactor and document
 * feature: extend conditional compilation to headers and variables
   on command line arguments)
