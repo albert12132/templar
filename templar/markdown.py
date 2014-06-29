@@ -908,7 +908,11 @@ def cmd_options(parser):
     parser.add_argument('-d', '--destination', type=str,
                         help="Store result in destination file")
 
-def main(args, configs=None):
+def main(args=None):
+    if not args:
+        parser = argparse.ArgumentParser()
+        cmd_options(parser)
+        args = parser.parse_args()
     if not args.source:
         text = ''
         print('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')
@@ -937,8 +941,3 @@ def main(args, configs=None):
         print('Result can be found in ' + args.destination)
     else:
         print(result)
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="""Markdown parser""")
-    cmd_options(parser)
-    main(parser.parse_args())
