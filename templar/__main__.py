@@ -78,20 +78,20 @@ def main():
 
     link_parser = subparsers.add_parser('link')
     link.cmd_options(link_parser)
-    link_parser.set_defaults(func=link.main)
+    link_parser.set_defaults(
+            func=lambda args: link.main(args, configure_path()))
 
     compile_parser = subparsers.add_parser('compile')
     compile.cmd_options(compile_parser)
-    compile_parser.set_defaults(func=compile.main)
+    compile_parser.set_defaults(
+            func=lambda args: compile.main(args, configure_path()))
 
     config_parser = subparsers.add_parser('config')
     config_cmd_options(config_parser)
     config_parser.set_defaults(func=config_main)
 
     args = parser.parse_args()
-
-    configs = configure_path()
-    args.func(args, configs)
+    args.func(args)
 
 if __name__ == '__main__':
     main()

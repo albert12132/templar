@@ -1,8 +1,8 @@
 import os
 import re
 # Import various utilities from utils
-# import utils.html
-# import utils.filters
+# import templar.utils.html
+# import templar.utils.filters
 
 # Path of the current file -- best not to change this
 FILEPATH = os.path.dirname(os.path.abspath(__file__))
@@ -37,6 +37,6 @@ SUBSTITUTIONS = [
 
 
 # Use the following to scrape "headers"
-# TOC_BUILDER should be a subclass of utils.core.TocBuilder
-# TOC_BUILDER = utils.html.HeaderParser
+# TOC_BUILDER should be a subclass of templar.utils.core.TocBuilder
+# TOC_BUILDER = templar.utils.html.HeaderParser
 

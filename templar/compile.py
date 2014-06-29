@@ -11,7 +11,7 @@
 import re
 import argparse
 import os
-import link
+import templar.link as link
 from templar.markdown import Markdown
 
 
