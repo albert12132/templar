@@ -1,4 +1,4 @@
-from utils import LinkTest, main
+from tests.test_utils import LinkTest, main
 
 class IncludeTest(LinkTest):
     def testBasic(self):

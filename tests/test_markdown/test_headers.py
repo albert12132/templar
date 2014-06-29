@@ -1,5 +1,5 @@
-from utils import MarkdownTest, main
-from markdown import convert, Markdown
+from tests.test_utils import MarkdownTest, main
+from templar.markdown import convert, Markdown
 
 class SetextTest(MarkdownTest):
     def testBasic(self):

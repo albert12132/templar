@@ -1,4 +1,4 @@
-from utils import MarkdownTest, main
+from tests.test_utils import MarkdownTest, main
 
 class ParagraphTest(MarkdownTest):
     def testBasic(self):

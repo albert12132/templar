@@ -1,12 +1,9 @@
-import sys
-sys.path.insert(0, '..')
-
 import os
 import unittest
 import re
-from markdown import convert, Markdown
-import link
-import utils as utilities
+from templar.markdown import convert, Markdown
+import templar.link as link
+from templar.utils.core import TableOfContents
 
 class TemplarTest(unittest.TestCase):
     @staticmethod
@@ -99,6 +96,7 @@ class LinkTest(TemplarTest):
             self.register_read(files)
         if not args:
             args = []
+        args = MockArgparseObject(args)
         result = link.link(self.stripLeadingWhitespace(src)) + '\n'
         result = link.substitutions(result, subs, args)
         output = self.stripLeadingWhitespace(output) + '\n'
@@ -114,9 +112,15 @@ class LinkTest(TemplarTest):
                              self.stripLeadingWhitespace(dict2[k]))
 
     def assertHeaders(self, text, regex, translate, expect):
+        toc_builder = TableOfContents(text)
+        toc_builder.pattern = regex
+        toc_builder.translate = translate
         self.assertEqual(link.scrape_headers(text, regex, translate),
                          expect)
 
+class MockArgparseObject:
+    def __init__(self, conditions):
+        self.conditions = conditions
 
 def main():
     unittest.main()

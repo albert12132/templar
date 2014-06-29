@@ -1,4 +1,4 @@
-from utils import LinkTest, main
+from tests.test_utils import LinkTest, main
 import re
 
 class SubstitutionTest(LinkTest):
@@ -67,7 +67,7 @@ class SubstitutionTest(LinkTest):
         def sub(m):
             return '<h1>Solution</h1>'
         def cond(args):
-            return 'solution' in args
+            return 'solution' in args.conditions
         subs = [
             (r"<solution>", sub, cond),
         ]
@@ -87,7 +87,7 @@ class SubstitutionTest(LinkTest):
         def sub_expl(m):
             return '<h1>Explanation</h1>'
         def cond(args):
-            return 'solution' in args
+            return 'solution' in args.conditions
         subs = [
             (r"<solution>", sub_sol, cond),
             (r"<explanation>", sub_expl, lambda args: not cond(args)),

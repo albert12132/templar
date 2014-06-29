@@ -1,6 +1,6 @@
 import re
-from test_utils import LinkTest, main, utilities
-import utils.html as html
+from tests.test_utils import LinkTest, main
+import templar.utils.html as html
 
 class EscapeTest(LinkTest):
     def testHexUnescape(self):
