@@ -5,17 +5,17 @@ from os import path
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file
-with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+# with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
+#     long_description = f.read()
 
 dependencies = [
 ]
 
 setup(
     name='templar',
-    version='1.0.0.dev1',
+    version='1.0.0.dev3',
     description='A static templating engine written in Python',
-    long_description=long_description,
+    # long_description=long_description,
     url='https://github.com/albert12132/templar',
     author='Albert Wu',
     author_email='albert12132@gmail.com',
