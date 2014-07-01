@@ -20,40 +20,182 @@ from templar.markdown import Markdown
 ##############
 
 def compile(template_path, attrs):
-    # process template inheritance first
-    templates = get_all_templates(template_path, [], attrs['TEMPLATE_DIRS'])
-    templates.reverse()
-    template = compile_inheritance(templates)
+    template = process_inheritance(template_path,
+                                   attrs['TEMPLATE_DIRS'])
+    return process(template, attrs)
 
+def process_inheritance(template_path, template_dirs):
+    templates = get_all_templates(template_path, [], template_dirs)
+    templates.reverse()
+    return compile_inheritance(templates)
+
+def process(template, attrs):
+    if not isinstance(attrs, Frame):
+        attrs = Frame(bindings=attrs)
+    template = process_control(template, attrs)
     while expr_re.search(template):
-        for tag in expr_re.findall(template):
-            if tag in attrs:
-                val = attrs[tag]
-            else:
-                try:
-                    val = eval(tag, attrs)
-                except:
-                    val = ''
-            template = re.sub('\{\{\s.+?\s\}\}', str(val), template,
-                              count=1)
+        template = expr_re.sub(lambda m: str(evaluate(m.group(1),
+                                                      attrs)),
+                               template)
     return template
 
 ##################
 # REGEX PATTERNS #
 ##################
 
-extend_tag_re = re.compile(r'<%\s*extends\s*(.+?)\s*%>\n')
+extend_re = re.compile(r"""
+    \A<%                # extend must be first line in file
+        \s*extends\s+
+        (.+?)           # \1 is superclass template
+    \s*%>\n
+""", re.S | re.X)
 
-super_open_re= re.compile(r'<%\s*(.+?)\s*%>')
-super_close_re = re.compile(r'<%/\s*(.+?)\s*%>')
+super_re= re.compile(r"""
+    (<%                 # \1 is block tag
+        \s*block\s+
+        (.+?)           # \2 is block name
+    \s*%>)
+    (.*?)               # \3 is block contents
+    \1                  # closing block tag
+""", re.S | re.X)
 
-sub_tag_re = re.compile('\{%\s*(.+?)\s*%\}')
+sub_re = re.compile(r"""
+    \{%
+        \s*block\s+
+        (.+?)           # \1 is block name
+    \s*%\}
+""", re.S | re.X)
 
-expr_re = re.compile('\{{2}\s*(.+?)\s*\}{2}')
+expr_re = re.compile(r"""
+    \{{2}\s*
+        (.+?)           # \1 is expression
+    \s*\}{2}
+""", re.S | re.X)
 
-#####################
+for_re = r"""
+    \{%                     # opening brace
+        \s*(for)\s*         # \1 is for keyword
+        (                   # \2 is variable list
+            (?:
+                \{{2}\s*    # variable is of the form {{ var }}
+                .*?         # variable name
+                \s*\}{2}
+                \s*,?\s*    # comma
+            )+              # one or more variables
+        )
+        \s*in\s*
+        \{{2}\s*
+            (.*?)           # \3 is the iterable
+        \s*\}{2}
+    \s*%\}
+    (.*?)                   # \4 is loop body
+    \{%                     # closing brace
+        \s*endfor\s*
+    %\}
+"""
+
+def conditional_re(keyword):
+    return r"""
+    \{%                 # brace
+        \s*(""" + keyword + r""")\s*      # \1 is brace type
+        (?:
+            \{{2}\s*    # conditional is of the form {{ cond }}
+                (.*?)   # \2 is conditional
+            \s*\}{2}
+        )?
+    \s*%\}
+    (.*?)               # \3 is body
+    """
+if_re = conditional_re('if') + \
+    '(?:' + conditional_re('elif') + ')*' + \
+    '(?:' + conditional_re('else') + ')?' + \
+    r'\{%\s*endif\s*%\}'
+
+########################
+# TEMPLATE COMPILATION #
+########################
+
+def process_control(template, attrs):
+    control_re = re.compile(for_re + '\n|\n' + if_re, re.S | re.X)
+    def control_sub(match):
+        if match.group(1) == 'for':
+            return process_for(match, attrs)
+        elif match.group(5) == 'if':
+            return process_if(match, attrs)
+    return control_re.sub(control_sub, template)
+
+def process_for(match, attrs):
+    match = re.match(for_re, match.group(0), flags=re.S | re.X)
+    variables = expr_re.findall(match.group(2).replace('\n', ' '))
+    iterable = evaluate(match.group(3), attrs)
+    text = ''
+    for elem in iterable:
+        new_frame = Frame(parent=attrs)
+        if type(elem) == str or not hasattr(elem, '__iter__'):
+            elem = (elem,)
+        for var, val in zip(variables, elem):
+            new_frame[var] = val
+        text += process(match.group(4), new_frame).strip() + '\n'
+    return text
+
+def process_if(match, attrs):
+    cond_re = re.compile(conditional_re('if|elif|else') + '(?=\{)',
+                         re.S | re.X)
+    for keyword, cond, body in cond_re.findall(match.group(0)):
+        if keyword == 'else':
+            return process(body, attrs).strip()
+        elif is_true(cond, attrs):
+            return process(body, attrs).strip()
+    return ''
+
+def is_true(expression, attrs):
+    if evaluate(expression, attrs):
+        return True
+    else:
+        return False
+
+
+class Frame:
+    def __init__(self, bindings=None, parent=None):
+        self.parent = parent
+        if bindings:
+            self.bindings = bindings
+        else:
+            self.bindings = {}
+
+    def __getitem__(self, variable):
+        if variable in self.bindings:
+            return self.bindings[variable]
+        elif self.parent:
+            return self.parent[variable]
+        try:
+            return eval(variable)
+        except:
+            return ''
+
+    def __contains__(self, variable):
+        variable = variable.replace('\n', ' ').strip()
+        return variable in self.bindings or \
+                self.parent and variable in self.parent
+
+    def __setitem__(self, variable, value):
+        self.bindings[variable] = value
+
+def evaluate(expression, attrs):
+    expression = expression.replace('\n', ' ').strip()
+    if expression in attrs:
+        return attrs[expression]
+    else:
+        try:
+            return eval(expression, {}, attrs)
+        except:
+            return ''
+
+
+
+######################
 # TEMPLATE RETRIEVAL #
-#####################
+######################
 
 def get_template(filename, template_dirs):
     """Return the contents of `filename` as a string.
@@ -86,10 +228,8 @@ def get_template(filename, template_dirs):
         dirs = template_dirs
     for path in dirs:
         template = os.path.join(path, 'templates', filename)
-        if os.path.exists(template):
-            with open(template, 'r') as f:
-                contents = f.read()
-            return contents
+        if file_exists(template):
+            return file_read(template)
     print(filename + ' could not be found in:')
     for path in dirs:
         print(os.path.join(path, 'templates'))
@@ -114,7 +254,7 @@ def get_all_templates(filename, templates, template_dirs):
     Exits with status 1 if improper inheritance syntax is encountered.
     """
     contents = get_template(filename, template_dirs)
-    match = extend_tag_re.match(contents)
+    match = extend_re.match(contents)
     if match:
         contents = contents[len(match.group(0)):]
         parent = match.group(1)
@@ -123,9 +263,8 @@ def get_all_templates(filename, templates, template_dirs):
     return templates
 
 ########################
-# INHERITANCE COMPILER #
+# TEMPLATE INHERITANCE #
 ########################
-
 
 def list_supers(template):
     """Return a dictionary where keys are tags inherited by the
@@ -142,28 +281,20 @@ def list_supers(template):
     associated with each tag. The lines do NOT end in newline
     characters.
 
-    >>> t = '<% t1 %>\\nhello\\nthere dog\\n<%/ t1 %>'
+    >>> t = '<% block t1 %>\\nhello\\nthere dog\\n<% block t1 %>'
     >>> list_supers(t)
-    {'t1': ['hello', 'there dog']}
-    >>> t = '<% t1 %>\\n<%/ t1 %>\\n<% t2 %>\\nhello\\n<%/ t2 %>'
+    {'t1': 'hello\\nthere dog'}
+    >>> t = '<% block t1 %>\\n<% block t1 %>\\n<% block t2 %>\\nhello\\n<% block t2 %>'
     >>> list_supers(t)
-    {'t2': ['hello'], 't1': []}
-    >>> t = '<% t1 %>\\n<% t2 %>\\n<%/ t2 %>\\n<%/ t1 %>'
+    {'t2': 'hello', 't1': ''}
+    >>> t = '<% block t1 %>\\n<% block t2 %>\\n<% block t2 %>\\n<% block t1 %>'
     >>> list_supers(t)
-    {'t1': ['<% t2 %>', '<%/ t2 %>']}
+    {'t1': '<% block t2 %>\\n<% block t2 %>'}
     """
     supers = {}
     tag = None
-    for line in template.split('\n'):
-        open_match = super_open_re.match(line)
-        close_match = super_close_re.match(line)
-        if open_match and tag is None:
-            tag = open_match.group(1)
-            supers[tag] = []
-        elif close_match and close_match.group(1) == tag:
-            tag = None
-        elif tag:
-            supers[tag].append(line)
+    for _, name, contents in super_re.findall(template):
+        supers[name] = contents.strip()
     return supers
 
 
@@ -203,21 +334,56 @@ def compile_inheritance(templates):
     'bye{{ hi }}'
     """
     if len(templates) == 1:
-        return re.sub('\{%\s.+?\s%\}', '', templates[0])
+        return sub_re.sub('', templates[0])
     super_temp, sub_temp = templates.pop(), templates.pop()
     supers = list_supers(sub_temp)
     seen = set()
-    for match in sub_tag_re.finditer(super_temp):
-        tag = match.group(1)
-        if tag not in supers or tag in seen:
+    for name in sub_re.findall(super_temp):
+        if name not in supers or name in seen:
             continue
-        replace = '\n'.join(supers[tag])
-        super_temp = re.sub('\{%\s*' + tag + '\s*%\}', replace,
-                            super_temp)
-        seen.add(tag)
+        replace = supers[name]
+        super_temp = re.sub('\{%\s*block\s+' + name + '\s*%\}',
+                            replace,
+                            super_temp, flags=re.S)
+        seen.add(name)
     templates.append(super_temp)
     return compile_inheritance(templates)
 
+##################
+# File Utilities #
+##################
+
+def file_exists(filename):
+    """Checks if a file exists relative to os.getcwd().
+
+    NOTE:
+    This function exists to make test injection easier.
+
+    RETURNS:
+    bool; True if filename exists
+    """
+    return os.path.exists(filename)
+
+def file_read(filename):
+    """Reads contents of a specified file.
+
+    NOTE:
+    This function exists to make test injection easier.
+
+    RETURNS:
+    text -- str; contents of file
+    """
+    with open(filename, 'r') as f:
+        return f.read()
+
+def file_write(filename, text):
+    """Writes text to a specified file.
+
+    NOTE:
+    This function exists to make test injection easier.
+    """
+    with open(filename, 'w') as f:
+        f.write(text)
 
 ##########################
 # COMMAND LINE UTILITIES #
@@ -236,14 +402,13 @@ def cmd_options(parser):
 
 def main(args, configs):
     if args.source:
-        if not os.path.exists(args.source):
+        if not file_exists(args.source):
             print('File ' + args.source + ' does not exist.')
             exit(1)
         elif not os.path.isfile(args.source):
             print(args.source + ' is not a valid file')
             exit(1)
-        with open(args.source, 'r') as f:
-            result = link.link(f.read())
+        result = link.link(file_read(args.source))
         if args.markdown:
             markdown_obj = Markdown(result)
             for k, v in markdown_obj.variables.items():
@@ -266,10 +431,7 @@ def main(args, configs):
     if not args.destination:
         print(result)
         return
-    with open(args.destination, 'w') as f:
-        f.write(result)
-        print('Finished compiling')
-        print('Result can be found at ' + args.destination)
+    file_write(args.destination)
+    print('Finished compiling')
+    print('Result can be found at ' + args.destination)
 
-if __name__ == '__main__':
-    print('Usage: python3 __main__ compile ...')
