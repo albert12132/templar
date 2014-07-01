@@ -1,8 +1,10 @@
 import os
 import unittest
 import re
-from templar.markdown import convert, Markdown
 import templar.link as link
+import templar.compile as compile
+
+from templar.markdown import convert, Markdown
 from templar.utils.core import TableOfContents
 
 class TemplarTest(unittest.TestCase):
@@ -58,13 +60,12 @@ class MarkdownTest(TemplarTest):
 class LinkTest(TemplarTest):
     def setUp(self):
         self.files = {}
-        self.old_file = link.file_read, link.file_write, link.file_exists
+        self.old_file = link.file_read, link.file_exists
         link.file_read = self._read
         link.file_exists = self._file_exists
-        # link.file_write = # TODO
 
     def teardDown(self):
-        link.file_read, link.file_write = self.old_file
+        link.file_read, link.file_exists = self.old_file
         self.files = None
 
     def register_read(self, files):
@@ -117,6 +118,44 @@ class LinkTest(TemplarTest):
         toc_builder.translate = translate
         self.assertEqual(link.scrape_headers(text, regex, translate),
                          expect)
+
+class CompileTest(TemplarTest):
+    def setUp(self):
+        self.files = {}
+        self.old_file = compile.file_read, compile.file_exists
+        compile.file_read = self._read
+        compile.file_exists = self._file_exists
+
+    def teardDown(self):
+        link.file_read, link.file_exists = self.old_file
+        self.files = None
+
+    def register_read(self, files):
+        for filename, contents in files.items():
+            self.files[filename] = self.stripLeadingWhitespace(contents)
+
+    def _read(self, filename):
+        return self.files[filename]
+
+    def _file_exists(self, filename):
+        return filename in self.files
+
+    def assertInheritance(self, template_path, template_dirs, expect, files=None):
+        template_path = os.path.basename(template_path)
+        if files:
+            self.register_read(files)
+        actual = self.stripLeadingWhitespace(
+                    compile.process_inheritance(
+                             template_path, template_dirs))
+        expect = self.stripLeadingWhitespace(expect)
+        self.assertEqual(actual, expect)
+
+    def assertProcess(self, template, attrs, expect):
+        template = self.stripLeadingWhitespace(template)
+        actual = self.stripLeadingWhitespace(
+                            compile.process(template, attrs))
+        expect = self.stripLeadingWhitespace(expect)
+        self.assertEqual(actual, expect)
 
 class MockArgparseObject:
     def __init__(self, conditions):
