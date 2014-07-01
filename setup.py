@@ -13,7 +13,7 @@ dependencies = [
 
 setup(
     name='templar',
-    version='1.0.0.dev3',
+    version='1.0.0.dev4',
     description='A static templating engine written in Python',
     # long_description=long_description,
     url='https://github.com/albert12132/templar',
