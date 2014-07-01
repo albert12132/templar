@@ -19,7 +19,9 @@ def configure_path():
     root = cwd
     paths.append(root)
     sys.path.insert(0, root)
-    for path in paths:
+    for path in reversed(paths):
+        if not os.path.exists(os.path.join(path, 'config.py')):
+            continue
         path = path.replace(root, '').replace('/', '.').replace('\\', '.') + '.config'
         path = path.strip('.')
         config = importlib.import_module(path)
