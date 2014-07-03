@@ -431,7 +431,7 @@ def main(args, configs):
     if not args.destination:
         print(result)
         return
-    file_write(args.destination)
+    file_write(args.destination, result)
     print('Finished compiling')
     print('Result can be found at ' + args.destination)
 
