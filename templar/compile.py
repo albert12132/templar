@@ -423,7 +423,7 @@ def main(args, configs):
                     ):
                 exec(import_stmt, configs)
         for k, v in cache.items():
-            configs[k] = v
+            configs['VARIABLES'][k] = v
 
     result = compile(args.template, configs)
     if not args.destination:
