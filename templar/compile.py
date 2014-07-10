@@ -19,10 +19,10 @@ from templar.markdown import Markdown
 # Public API #
 ##############
 
-def compile(template_path, attrs):
+def compile(template_path, config):
     template = process_inheritance(template_path,
-                                   attrs['TEMPLATE_DIRS'])
-    return process(template, attrs)
+                                   config['TEMPLATE_DIRS'])
+    return process(template, config['VARIABLES'])
 
 def process_inheritance(template_path, template_dirs):
     templates = get_all_templates(template_path, [], template_dirs)
