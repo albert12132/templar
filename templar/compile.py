@@ -139,8 +139,8 @@ def process_for(match, attrs):
     return text
 
 def process_if(match, attrs):
-    cond_re = re.compile(conditional_re('if|elif|else') + '(?=\{)',
-                         re.S | re.X)
+    cond_re = re.compile(conditional_re('if|elif|else') + \
+            '\n\\n(?=\{%\s*(?:elif|else|endif))', re.S | re.X)
     for keyword, cond, body in cond_re.findall(match.group(0)):
         if keyword == 'else':
             return process(body, attrs).strip()
@@ -153,7 +153,6 @@ def is_true(expression, attrs):
         return True
     else:
         return False
-
 
 class Frame:
     def __init__(self, bindings=None, parent=None):
@@ -296,7 +295,6 @@ def list_supers(template):
     for _, name, contents in super_re.findall(template):
         supers[name] = contents.strip()
     return supers
-
 
 def compile_inheritance(templates):
     """Compiles the inheritance chain of templates into a single

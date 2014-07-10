@@ -205,6 +205,23 @@ class ConditionalTest(CompileTest):
         """
         self.assertProcess(template, attrs, expect)
 
+    def testExpressionInConditionalClause(self):
+        template = r"""
+        Hello World!
+        {% if {{ variable }} %}
+        This {{ variable }}
+        {% endif %}
+        """
+        attrs = {
+            'variable': 'something',
+        }
+        expect = """
+        Hello World!
+        This something
+        """
+        self.assertProcess(template, attrs, expect)
+
+
 class ForLoopTest(CompileTest):
     def testIterableVariable(self):
         template = """
