@@ -406,7 +406,7 @@ def main(args, configs):
         elif not os.path.isfile(args.source):
             print(args.source + ' is not a valid file')
             exit(1)
-        result = link.link(file_read(args.source))
+        result = link.link(args.source)
         if args.markdown:
             markdown_obj = Markdown(result)
             for k, v in markdown_obj.variables.items():

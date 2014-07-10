@@ -2,10 +2,10 @@ from tests.test_utils import LinkTest, main
 
 class IncludeTest(LinkTest):
     def testBasic(self):
-        text = """
-        <include test.md>
-        """
         files = {
+            'text': """
+            <include test.md>
+            """,
             'test.md': """
             Hello world!
             """,
@@ -13,12 +13,12 @@ class IncludeTest(LinkTest):
         expect = """
         Hello world!
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
-        text = """
-        <include path/to/test.md>
-        """
         files = {
+            'text': """
+            <include path/to/test.md>
+            """,
             'path/to/test.md': """
             Hello world!
             """,
@@ -26,23 +26,25 @@ class IncludeTest(LinkTest):
         expect = """
         Hello world!
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testNoIncludes(self):
-        text = """
-        No includes
-        can be found here
-        """
-        expect = text
-        self.assertLink(text, expect)
+        files = {
+            'text': """
+            No includes
+            can be found here
+            """
+        }
+        expect = files['text']
+        self.assertLink('text', expect, files)
 
     def testSurroundingText(self):
-        text = """
-        Begin
-        <include test.md>
-        Close
-        """
         files = {
+            'text': """
+            Begin
+            <include test.md>
+            Close
+            """,
             'test.md': """
             Hello world!
             """,
@@ -52,17 +54,17 @@ class IncludeTest(LinkTest):
         Hello world!
         Close
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testNewline(self):
-        text = """
-        Begin
-
-        <include test.md>
-
-        Close
-        """
         files = {
+            'text': """
+            Begin
+
+            <include test.md>
+
+            Close
+            """,
             'test.md': """
             Hello world!
             """,
@@ -74,17 +76,17 @@ class IncludeTest(LinkTest):
 
         Close
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testLeadingWhitespace(self):
-        text = """
-        Begin
-
-            <include test.py>
-
-        Close
-        """
         files = {
+            'text': """
+            Begin
+
+                <include test.py>
+
+            Close
+            """,
             'test.py': """
             def hello(world):
                 return hi
@@ -98,13 +100,13 @@ class IncludeTest(LinkTest):
 
         Close
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testNestedIncludes(self):
-        text = """
-        <include fileA>
-        """
         files = {
+            'text': """
+            <include fileA>
+            """,
             'fileA': """
             <include fileB>
             """,
@@ -121,13 +123,13 @@ class IncludeTest(LinkTest):
         expect = """
         Target!
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testBlock(self):
-        text = """
-        <include test.md:blockA>
-        """
         files = {
+            'text': """
+            <include test.md:blockA>
+            """,
             'test.md': """
             Hello
             <block blockA>
@@ -138,12 +140,12 @@ class IncludeTest(LinkTest):
         expect = """
         World!
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
-        text = """
-        <include test.md:blockA>
-        """
         files = {
+            'text': """
+            <include test.md:blockA>
+            """,
             'test.md': """
             Hello
             <block blockA>
@@ -160,17 +162,17 @@ class IncludeTest(LinkTest):
 
         World!
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testMultipleBlocksInSameFile(self):
-        text = """
-        <include test.md:blockA>
-
-        In between
-
-        <include test.md:blockB>
-        """
         files = {
+            'text': """
+            <include test.md:blockA>
+
+            In between
+
+            <include test.md:blockB>
+            """,
             'test.md': """
             Hello
             <block blockA>
@@ -189,17 +191,17 @@ class IncludeTest(LinkTest):
 
         Stuff here
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testSameBlockMultipleTimes(self):
-        text = """
-        <include test.md:blockA>
-
-        In between
-
-        <include test.md:blockA>
-        """
         files = {
+            'text': """
+            <include test.md:blockA>
+
+            In between
+
+            <include test.md:blockA>
+            """,
             'test.md': """
             Hello
             <block blockA>
@@ -214,17 +216,17 @@ class IncludeTest(LinkTest):
 
         World!
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testMultipleFilesSameBlockName(self):
-        text = """
-        <include test.md:blockA>
-
-        In between
-
-        <include foo.md:blockA>
-        """
         files = {
+            'text': """
+            <include test.md:blockA>
+
+            In between
+
+            <include foo.md:blockA>
+            """,
             'test.md': """
             <block blockA>
             Test
@@ -243,13 +245,13 @@ class IncludeTest(LinkTest):
 
         Foo
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testBlockRegex(self):
-        text = """
-        <include test.md:block\d>
-        """
         files = {
+            'text': """
+            <include test.md:block\d>
+            """,
             'test.md': """
             <block block0>
             Zero
@@ -266,13 +268,13 @@ class IncludeTest(LinkTest):
         Zero
         Two
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testBlockRegexExcludeAll(self):
-        text = """
-        <include test.md:.*>
-        """
         files = {
+            'text': """
+            <include test.md:.*>
+            """,
             'test.md': """
             <block block0>
             Zero
@@ -290,13 +292,13 @@ class IncludeTest(LinkTest):
         A
         Two
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testExplicitAll(self):
-        text = """
-        <include test.md:all>
-        """
         files = {
+            'text': """
+            <include test.md:all>
+            """,
             'test.md': """
             Hello world
             <block blockA>
@@ -308,13 +310,13 @@ class IncludeTest(LinkTest):
         Hello world
         Here we go
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testRelativePath(self):
-        text = """
-        <include stuff/test.md>
-        """
         files = {
+            'text': """
+            <include stuff/test.md>
+            """,
             'stuff/test.md': """
             Hello world!
             <include test.py>
@@ -327,22 +329,24 @@ class IncludeTest(LinkTest):
         Hello world!
         New Age
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
     def testPreserveBlocks(self):
-        text = """
-        <block hello>
-        Hello
-        </block hello>
-        """
-        expect = text
-        self.assertLink(text, expect)
+        files = {
+            'text': """
+            <block hello>
+            Hello
+            </block hello>
+            """
+        }
+        expect = files['text']
+        self.assertLink('text', expect, files)
 
     def testRemoveIncludedBlocks(self):
-        text = """
-        <include test.md>
-        """
         files = {
+            'text': """
+            <include test.md>
+            """,
             'test.md': """
             <block blockA>
             Hello
@@ -352,7 +356,7 @@ class IncludeTest(LinkTest):
         expect = """
         Hello
         """
-        self.assertLink(text, expect, files)
+        self.assertLink('text', expect, files)
 
 
 if __name__ == '__main__':

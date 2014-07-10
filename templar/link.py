@@ -10,7 +10,7 @@ from templar.markdown import convert
 # Public API #
 ##############
 
-def link(text):
+def link(filepath):
     """Link the text based on <include> tags.
 
     An include tag should have the following syntax:
@@ -56,7 +56,8 @@ def link(text):
     text -- str; the text after resolving all include tags. Any block
             tags that are left over are preserved in text.
     """
-    return substitute_links(text, OrderedDict(), '')
+    return substitute_links(file_read(filepath), OrderedDict(),
+            os.path.dirname(filepath))
 
 def retrieve_blocks(text):
     """Strip block tags from text and return a mapping of block
@@ -335,7 +336,7 @@ def main(args, configs):
         print(args.source + ' is not a valid file',
               file=sys.stderr)
         exit(1)
-    result = link(file_read(args.source))
+    result = link(args.source)
     if args.markdown:
         result = convert(result)
     result = substitutions(result,

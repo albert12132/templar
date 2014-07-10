@@ -82,7 +82,7 @@ class LinkTest(TemplarTest):
     def assertLink(self, src, output, files=None):
         if files:
             self.register_read(files)
-        result = link.link(self.stripLeadingWhitespace(src)) + '\n'
+        result = link.link(src) + '\n'
         output = self.stripLeadingWhitespace(output) + '\n'
         self.assertEqual(result, output)
 
@@ -99,7 +99,7 @@ class LinkTest(TemplarTest):
         if not args:
             args = []
         args = MockArgparseObject(args)
-        result = link.link(self.stripLeadingWhitespace(src)) + '\n'
+        result = self.stripLeadingWhitespace(src) + '\n'
         result = link.substitutions(result, subs, args)
         output = self.stripLeadingWhitespace(output) + '\n'
         self.assertEqual(result, output)
