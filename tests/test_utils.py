@@ -3,6 +3,7 @@ import unittest
 import re
 import templar.link as link
 import templar.compile as compile
+import templar.__main__ as config
 
 from templar.markdown import convert, Markdown
 from templar.utils.core import TableOfContents
@@ -127,7 +128,7 @@ class CompileTest(TemplarTest):
         compile.file_exists = self._file_exists
 
     def teardDown(self):
-        link.file_read, link.file_exists = self.old_file
+        compile.file_read, compile.file_exists = self.old_file
         self.files = None
 
     def register_read(self, files):
@@ -156,6 +157,33 @@ class CompileTest(TemplarTest):
                             compile.process(template, attrs))
         expect = self.stripLeadingWhitespace(expect)
         self.assertEqual(actual, expect)
+
+class ConfigTest(TemplarTest):
+    def setUp(self):
+        self.files = {}
+        self.old_functions = config.import_config, config.file_exists
+        config.import_config = self._import_config
+        config.file_exists = self._file_exists
+
+    def teardDown(self):
+        self.files = None
+        config.import_config, config.file_exists = self.old_functions
+
+    def register_read(self, files):
+        self.files = files
+
+    def _import_config(self, filename):
+        filename = os.path.join(filename, config.CONFIG_NAME)
+        return self.files[filename]
+
+    def _file_exists(self, filename):
+        return filename in self.files
+
+    def assertConfig(self, expect, paths, files=None):
+        if files:
+            self.register_read(files)
+        actual = config.configure(paths)
+        self.assertEqual(expect, actual)
 
 class MockArgparseObject:
     def __init__(self, conditions):

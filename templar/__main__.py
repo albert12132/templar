@@ -7,40 +7,99 @@ import importlib
 import os
 import sys
 
+VARIABLES = 'VARIABLES'
+CONFIG_NAME = 'config.py'
 
-def configure_path():
-    configs = {}
-    cwd = os.getcwd()
-    templar = os.path.abspath(__file__)
+##############
+# Public API #
+##############
+
+def get_paths(templar_path, source_path):
+    """Retrieves a list of paths to search depending on templar_path
+    (the filepath of this file) and source_path (the filepath of the
+    source directory/file).
+
+    PARAMETERS:
+    templar_path -- str; filepath of Templar
+    source_path  -- str; filepath of the source directory/file
+
+    Templar first determines the least common ancestor of templar_path
+    and source_path. The resulting list of paths will be all paths
+    from the ancestor to source_path, starting from the ancestor to
+    source_path.
+
+    RETURNS:
+    list of str; a list of filepaths, starting with the ancestor and
+    ending at source_path.
+    """
     paths = []
-    while not templar.startswith(cwd):
-        paths.append(cwd)
-        cwd = os.path.dirname(cwd)
-    root = cwd
-    paths.append(root)
-    sys.path.insert(0, root)
-    for path in reversed(paths):
-        if not os.path.exists(os.path.join(path, 'config.py')):
+    while not templar_path.startswith(source_path):
+        paths.append(source_path)
+        source_path = os.path.dirname(source_path)
+    paths.append(source_path)
+    paths.reverse()
+    return paths
+
+def configure(paths):
+    """For each filepath in paths, search for a file called config.py
+    and add its configuration variables if the file exists.
+
+    PARAMETERS:
+    paths -- list of str; a list of filepaths to search. Search goes
+             through the list starting from the first index.
+
+    If two filepaths have the same variable in their respective
+    config.py, the filepath that is processed later will overwrite the
+    filepath that is processed earlier.
+
+    RETURNS:
+    dict; configuration dictionary with the following key-value pairs:
+
+    TEMPLATE_DIRS
+    SUBSTITUTIONS
+    VARIABLES
+    TOC_BUILDER
+    """
+    configs = {VARIABLES: {}}
+    sys.path.insert(0, paths[0])    # set path to root
+    for path in paths:
+        if not file_exists(os.path.join(path, CONFIG_NAME)):
             continue
-        path = path.replace(root, '').replace('/', '.').replace('\\', '.') + '.config'
-        path = path.strip('.')
-        config = importlib.import_module(path)
-        extract_configs(config, configs)
+        extract_configs(import_config(path), configs)
     return configs
 
+###########################
+# Configuration utilities #
+###########################
+
+def import_config(path):
+    """Imports a file called config.py that is located in the directory
+    denoted by the parameter PATH.
+
+    PARAMETERS:
+    path -- str; directory in which config.py is located. The directory
+            is assumed to contain a config.py file; any validation
+            should be made before calling this function.
+
+    RETURNS:
+    module; the imported config.py module.
+    """
+    path = path.replace(root, '').replace('/', '.').replace('\\', '.') + '.config'
+    path = path.strip('.')
+    return importlib.import_module(path).configurations
+
 def extract_configs(config, configs):
-    for dct in ('VARIABLES',):
-        if hasattr(config, dct):
-            new = getattr(config, dct)
-            for k, v in new.items():
-                configs[k] = v
+    for k, v in config.get('VARIABLES', {}).items():
+        configs[VARIABLES][k] = v
     for lst in ('SUBSTITUTIONS', 'TEMPLATE_DIRS'):
-        if hasattr(config, lst):
-            new = getattr(config, lst)
-            configs.setdefault(lst, []).extend(new)
+        new = config.get(lst, [])
+        configs.setdefault(lst, []).extend(new)
     for obj in ('TOC_BUILDER',):
-        if hasattr(config, obj):
-            configs[obj] = getattr(config, obj)
+        if obj in config:
+            configs[obj] = config[obj]
+
+def file_exists(path):
+    return os.path.exists(path)
 
 
 ##########################
@@ -60,17 +119,19 @@ def config_main(args, configs=None):
     config = os.path.join(os.path.dirname(__file__), 'config.py')
     with open(config, 'r') as f:
         template = f.read()
-    if not os.path.exists(path) or \
-            'y' in input('Remove existing config.py? [y/n] ').lower():
+    if not os.path.exists(path) \
+            or 'y' in input('Remove existing {}? [y/n] '.format(CONFIG_NAME)).lower():
         with open(path, 'w') as f:
             f.write(template)
-        print('Copied config.py to', path)
+        print('Copied', CONFIG_NAME, 'to', path)
         exit(0)
     else:
-        print('config.py not copied')
+        print(CONFIG_NAME, 'not copied')
         exit(1)
 
 def main():
+    paths = get_paths(os.path.abspath(__file__), os.getcwd())
+
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
@@ -81,12 +142,12 @@ def main():
     link_parser = subparsers.add_parser('link')
     link.cmd_options(link_parser)
     link_parser.set_defaults(
-            func=lambda args: link.main(args, configure_path()))
+            func=lambda args: link.main(args, configure(paths)))
 
     compile_parser = subparsers.add_parser('compile')
     compile.cmd_options(compile_parser)
     compile_parser.set_defaults(
-            func=lambda args: compile.main(args, configure_path()))
+            func=lambda args: compile.main(args, configure(paths)))
 
     config_parser = subparsers.add_parser('config')
     config_cmd_options(config_parser)
