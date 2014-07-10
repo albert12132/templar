@@ -61,18 +61,19 @@ def configure(paths):
     TOC_BUILDER
     """
     configs = {VARIABLES: {}}
-    sys.path.insert(0, paths[0])    # set path to root
+    root = paths[0]
+    sys.path.insert(0, root)    # set path to root
     for path in paths:
         if not file_exists(os.path.join(path, CONFIG_NAME)):
             continue
-        extract_configs(import_config(path), configs)
+        extract_configs(import_config(path, root), configs)
     return configs
 
 ###########################
 # Configuration utilities #
 ###########################
 
-def import_config(path):
+def import_config(path, root):
     """Imports a file called config.py that is located in the directory
     denoted by the parameter PATH.
 
@@ -88,19 +89,45 @@ def import_config(path):
     path = path.strip('.')
     return importlib.import_module(path).configurations
 
-def extract_configs(config, configs):
-    for k, v in config.get('VARIABLES', {}).items():
-        configs[VARIABLES][k] = v
+def extract_configs(source, dest):
+    """Extract conifguration variables from config and place them in
+    configs.
+
+    PARAMETERS:
+    source -- dict; a source of configuration variables
+    dest   -- dict; destination for configuration variables
+
+    DESCRIPTION:
+    source is not assumed to have any contents. However, the only
+    contents in source that are copied over to dest are the
+    following:
+
+    VARIABLES     -- dict; contains variables as key-value pairs. The
+                     key-value pairs in source will be copied over
+                     to the VARIABLES key in dest.
+    SUBSTITUTIONS -- list of tuples; a sequence of
+                     (regex, substitution) groups. The substitutions
+                     in source are appended to the list of
+                     substitutions in dest
+    TEMPLATE_DIRS -- list of str; a sequence of filepaths in which
+                     to look for templates
+    TOC_BUILDER   -- utils.core.TableOfContents; an object that parses
+                     table of contents.
+
+    If any of these keys already exist in dest, their values will be
+    overwritten by the value in source.
+    """
+    for k, v in source.get('VARIABLES', {}).items():
+        dest[VARIABLES][k] = v
     for lst in ('SUBSTITUTIONS', 'TEMPLATE_DIRS'):
-        new = config.get(lst, [])
-        configs.setdefault(lst, []).extend(new)
+        new = source.get(lst, [])
+        dest.setdefault(lst, []).extend(new)
     for obj in ('TOC_BUILDER',):
-        if obj in config:
-            configs[obj] = config[obj]
+        if obj in source:
+            dest[obj] = source[obj]
 
 def file_exists(path):
     return os.path.exists(path)
-
 
 ##########################
 # Command-line Interface #

@@ -172,7 +172,7 @@ class ConfigTest(TemplarTest):
     def register_read(self, files):
         self.files = files
 
-    def _import_config(self, filename):
+    def _import_config(self, filename, root):
         filename = os.path.join(filename, config.CONFIG_NAME)
         return self.files[filename]
 
