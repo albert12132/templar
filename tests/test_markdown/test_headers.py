@@ -249,6 +249,20 @@ class AtxHeaders(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testHashBlankLine(self):
+        text = r"""
+        #
+
+        Stuff here
+        """
+        expect = """
+        <h1></h1>
+
+
+        <p>Stuff here</p>
+        """
+        self.assertMarkdown(text, expect)
+
 class SlugTests(MarkdownTest):
     def testBasic(self):
         simple = """

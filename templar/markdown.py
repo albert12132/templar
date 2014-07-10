@@ -746,16 +746,16 @@ def escapes_sub(match):
 
 atx_header_re = re.compile(r"""
     ^(\#{1,6})  # \1 is leading #s
-    \s*
+    [ \t]*
     (.*?)       # \2 is header title
-    \s*
-    \#*\s*      # Trailing #s for aesthetics (doesn't have to match)
+    [ \t]*
+    \#*[ \t]*   # Trailing #s for aesthetics (doesn't have to match)
     (?:
         \{
         (.*)    # \3 is optional id/class attributes
         \}
     )?
-    \s*$
+    [ \t]*$
 """, re.M | re.X)
 def atx_header_sub(match):
     """Substitutes atx headers (headers defined using #'s)."""
@@ -884,7 +884,9 @@ def slug_sub(match):
     slug = re.sub(r'<.+?>|[^\w-]', ' ', slug)
     slug = re.sub(r'[ \t]+', ' ', slug).strip()
     slug = slug.replace(' ', '-')
-    return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
+    if slug:
+        return '<{0} id="{1}">{2}</{0}>'.format(level, slug, title)
+    return match.group(0)
 
 def generate_footnotes(markdown_obj):
     footnotes = markdown_obj.footnotes
