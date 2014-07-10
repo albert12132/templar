@@ -114,12 +114,13 @@ class ScrapeHeadersTest(LinkTest):
         """
         regex = r"\+ Header (\d+)"
         translate = lambda m: 'Title ' + m.group(1)
-        expect = [
-            'Title 1',
-            'Title 2',
-            'Title 3',
-        ]
-        self.assertHeaders(text, regex, translate, expect)
+        build = lambda lst: '\n'.join(lst)
+        expect = """
+        Title 1
+        Title 2
+        Title 3
+        """
+        self.assertHeaders(text, regex, translate, build, expect)
 
     def testNoHeaders(self):
         text = """
@@ -128,8 +129,9 @@ class ScrapeHeadersTest(LinkTest):
         """
         regex = r"\+ Header (\d+)"
         translate = lambda m: 'Title ' + m.group(1)
-        expect = []
-        self.assertHeaders(text, regex, translate, expect)
+        build = lambda lst: '\n'.join(lst)
+        expect = ''
+        self.assertHeaders(text, regex, translate, build, expect)
 
     def testCounter(self):
         text = """
@@ -143,12 +145,13 @@ class ScrapeHeadersTest(LinkTest):
             nonlocal count
             count += 1
             return "Section {}: {}".format(count, m.group(1))
-        expect = [
-            'Section 1: To be',
-            'Section 2: Or not to be',
-            'Section 3: That is the question',
-        ]
-        self.assertHeaders(text, regex, translate, expect)
+        build = lambda lst: '\n'.join(lst)
+        expect = """
+        Section 1: To be
+        Section 2: Or not to be
+        Section 3: That is the question
+        """
+        self.assertHeaders(text, regex, translate, build, expect)
 
 
 if __name__ == '__main__':

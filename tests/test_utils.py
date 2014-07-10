@@ -65,7 +65,7 @@ class LinkTest(TemplarTest):
         link.file_read = self._read
         link.file_exists = self._file_exists
 
-    def teardDown(self):
+    def tearDown(self):
         link.file_read, link.file_exists = self.old_file
         self.files = None
 
@@ -113,12 +113,23 @@ class LinkTest(TemplarTest):
             self.assertEqual(self.stripLeadingWhitespace(dict1[k]),
                              self.stripLeadingWhitespace(dict2[k]))
 
-    def assertHeaders(self, text, regex, translate, expect):
-        toc_builder = TableOfContents(text)
-        toc_builder.pattern = regex
-        toc_builder.translate = translate
-        self.assertEqual(link.scrape_headers(text, regex, translate),
-                         expect)
+    def assertHeaders(self, text, regex, translate, build, expect):
+        toc_builder = make_mock_toc_builder(regex, translate, build)
+        expect = self.stripLeadingWhitespace(expect)
+        self.assertEqual(expect,
+                         link.scrape_headers(text, toc_builder))
+
+def make_mock_toc_builder(regex, translate, build):
+    class MockTocBuilder(TableOfContents):
+        @property
+        def pattern(self):
+            return regex
+        def translate(self, match):
+            return translate(match)
+        def build(self, lst):
+            return build(lst)
+    return MockTocBuilder
+
 
 class CompileTest(TemplarTest):
     def setUp(self):
