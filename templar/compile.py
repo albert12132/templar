@@ -410,7 +410,7 @@ def main(args, configs):
         if args.markdown:
             markdown_obj = Markdown(result)
             for k, v in markdown_obj.variables.items():
-                configs[k] = v
+                configs['VARIABLES'][k] = v
             result = markdown_obj.text
         result = link.substitutions(result,
                                     configs.get('SUBSTITUTIONS', []),
