@@ -417,7 +417,7 @@ def main(args, configs):
                                     args)
         result, cache = link.retrieve_blocks(result)
         if 'TOC_BUILDER' in configs:
-            configs['table-of-contents'] = link.scrape_headers(result, configs['TOC_BUILDER'])
+            configs['VARIABLES']['table-of-contents'] = link.scrape_headers(result, configs['TOC_BUILDER'])
             for import_stmt in (
                     'from datetime import datetime',
                     ):
