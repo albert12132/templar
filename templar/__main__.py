@@ -62,8 +62,8 @@ def configure(paths):
     """
     configs = {VARIABLES: {}}
     root = paths[0]
-    sys.path.insert(0, root)    # set path to root
     for path in paths:
+        sys.path.insert(0, path)
         if not file_exists(os.path.join(path, CONFIG_NAME)):
             continue
         extract_configs(import_config(path, root), configs)
