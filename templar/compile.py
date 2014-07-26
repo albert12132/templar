@@ -380,6 +380,9 @@ def file_write(filename, text):
     NOTE:
     This function exists to make test injection easier.
     """
+    dirname = os.path.dirname(filename)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
     with open(filename, 'w') as f:
         f.write(text)
 
