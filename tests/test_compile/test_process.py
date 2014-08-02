@@ -512,6 +512,84 @@ class IntegrationTest(CompileTest):
         """
         self.assertProcess(template, attrs, expect)
 
+    def testMacroConditional(self):
+        template = """
+        {% def macro {{ var }} %}
+        {% if {{ var }} %}
+        True
+        {% else %}
+        False
+        {% endif %}
+        {% enddef %}
+
+        {% call macro {{ True }} %}
+        """
+        attrs = {
+        }
+        expect = """
+        True
+        """
+        self.assertProcess(template, attrs, expect)
+
+    def testMacroFor(self):
+        template = """
+        {% def macro {{ item }} %}
+        {% for {{ var }} in {{ [i for i in range(4)] }} %}
+        {{ item }} {{ var }}
+        {% endfor %}
+        {% enddef %}
+
+        {% call macro {{ 'boo' }} %}
+        """
+        attrs = {
+        }
+        expect = """
+        boo 0
+        boo 1
+        boo 2
+        boo 3
+        """
+        self.assertProcess(template, attrs, expect)
+
+    def testConditionalMacro(self):
+        template = """
+        {% def macro {{ var }} %}
+        item {{ var }}
+        {% enddef %}
+
+        {% if {{ var }} %}
+        {% call macro {{ 'hi' }} %}
+        {% else %}
+        False
+        {% endif %}
+        """
+        attrs = {
+            'var': 'bool',
+        }
+        expect = """
+        item hi
+        """
+        self.assertProcess(template, attrs, expect)
+
+    def testForMacro(self):
+        template = """
+        {% def macro {{ var }} %}
+        item {{ var }}
+        {% enddef %}
+
+        {% for {{ var }} in {{ [i for i in range(4)] }} %}
+        {% call macro {{ var }} %}
+        {% endfor %}
+        """
+        attrs = {
+        }
+        expect = """
+        item 0
+        item 1
+        item 2
+        item 3
+        """
+        self.assertProcess(template, attrs, expect)
 
 if __name__ == '__main__':
     main()
