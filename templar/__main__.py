@@ -3,7 +3,7 @@ import templar.link as link
 import templar.markdown as markdown
 
 import argparse
-import importlib
+import importlib.machinery
 import os
 import sys
 
@@ -85,9 +85,9 @@ def import_config(path, root):
     RETURNS:
     module; the imported config.py module.
     """
-    path = path.replace(root, '').replace('/', '.').replace('\\', '.') + '.config'
-    path = path.strip('.')
-    return importlib.import_module(path).configurations
+    path = os.path.join(path, 'config.py')
+    loader = importlib.machinery.SourceFileLoader(path, path)
+    return loader.load_module().configurations
 
 def extract_configs(source, dest):
     """Extract conifguration variables from config and place them in
