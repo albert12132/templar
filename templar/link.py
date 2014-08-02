@@ -4,8 +4,8 @@ import re
 import sys
 import textwrap
 from collections import OrderedDict
-
 from templar.markdown import convert
+from templar import log
 
 ##############
 # Public API #
@@ -164,8 +164,8 @@ def substitute_links(text, cache, base_dir):
         if not file_exists(filename):
             filename = os.path.join(base_dir, filename)
             if not file_exists(filename):
-                print("Warning: could not find file", match.group(2),
-                        "or", filename)
+                log.warn("Could not find file " + match.group(2) \
+                        + " or " + filename)
                 return ''
 
         text = retrieve_and_link(filename, cache)
@@ -310,6 +310,9 @@ def file_write(filename, text):
     NOTE:
     This function exists to make test injection easier.
     """
+    dirname = os.path.dirname(filename)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
     with open(filename, 'w') as f:
         f.write(text)
 
@@ -332,12 +335,10 @@ def cmd_options(parser):
 
 def main(args, configs):
     if not os.path.exists(args.source):
-        print('File ' + args.source + ' does not exist.',
-              file=sys.stderr)
+        log.warn('File ' + args.source + ' does not exist.')
         exit(1)
     elif not os.path.isfile(args.source):
-        print(args.source + ' is not a valid file',
-              file=sys.stderr)
+        log.warn(args.source + ' is not a valid file')
         exit(1)
     result = link(args.source)
     if args.markdown:
@@ -348,14 +349,12 @@ def main(args, configs):
     result, cache = retrieve_blocks(result)
     if args.destination:
         file_write(args.destination, result)
-        print('Result can be found in ' + args.destination)
+        log.info('Result can be found in ' + args.destination)
     else:
-        if not args.quiet:
-            print('--- BEGIN RESULT ---')
-        print(result)
-        if not args.quiet:
-            print('--- END RESULT ---')
+        log.log('--- BEGIN RESULT ---', args.quiet)
+        log.log(result)
+        log.log('--- END RESULT ---', args.quiet)
 
 if __name__ == '__main__':
-    print('Usage: python3 __main__.py link ...')
+    log.log('Usage: python3 __main__.py link ...')
 

@@ -2,9 +2,10 @@ import argparse
 import html
 import os
 import re
+from collections import OrderedDict
 from hashlib import sha1
 from random import randint
-from collections import OrderedDict
+from templar import log
 
 ##############
 # Public API #
@@ -917,22 +918,22 @@ def main(args=None):
         args = parser.parse_args()
     if not args.source:
         text = ''
-        print('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')
+        log.log('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')
         while True:
             try:
                 text += input() + '\n'
             except EOFError:
-                print('--- END MARKDOWN ---')
+                log.log('--- END MARKDOWN ---')
                 break
             except KeyboardInterrupt:
-                print('\n--- Aborting script ---')
+                log.warn('Aborting script')
                 exit(1)
     else:
         if not os.path.exists(args.source):
-            print('File ' + args.source + ' does not exist.')
+            log.warn('File ' + args.source + ' does not exist.')
             exit(1)
         elif not os.path.isfile(args.source):
-            print(args.source + ' is not a valid file')
+            log.warn(args.source + ' is not a valid file')
             exit(1)
         with open(args.source, 'r') as f:
             text = f.read()
@@ -940,6 +941,6 @@ def main(args=None):
     if args.destination:
         with open(args.destination, 'w') as f:
             f.write(result)
-        print('Result can be found in ' + args.destination)
+        log.info('Result can be found in ' + args.destination)
     else:
-        print(result)
+        log.log(result)

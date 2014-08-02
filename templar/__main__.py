@@ -1,11 +1,8 @@
-import templar.compile as compile
-import templar.link as link
-import templar.markdown as markdown
-
 import argparse
 import importlib.machinery
 import os
 import sys
+from templar import compile, link, markdown, log
 
 VARIABLES = 'VARIABLES'
 CONFIG_NAME = 'config.py'
@@ -142,18 +139,18 @@ def config_main(args, configs=None):
         path = args.path
     else:
         path = os.getcwd()
-    path = os.path.join(path, 'config.py')
-    config = os.path.join(os.path.dirname(__file__), 'config.py')
+    dest = os.path.join(path, CONFIG_NAME)
+    config = os.path.join(os.path.dirname(__file__), CONFIG_NAME)
     with open(config, 'r') as f:
         template = f.read()
-    if not os.path.exists(path) \
-            or 'y' in input('Remove existing {}? [y/n] '.format(CONFIG_NAME)).lower():
-        with open(path, 'w') as f:
+    if os.path.exists(path) and (not os.path.exists(dest) \
+            or 'y' in input('Remove existing {}? [y/n] '.format(CONFIG_NAME)).lower()):
+        with open(dest, 'w') as f:
             f.write(template)
-        print('Copied', CONFIG_NAME, 'to', path)
+        log.info('Copied ' + CONFIG_NAME + ' to ' + dest)
         exit(0)
     else:
-        print(CONFIG_NAME, 'not copied')
+        log.warn(CONFIG_NAME + ' not copied')
         exit(1)
 
 def main():

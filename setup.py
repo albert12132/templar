@@ -9,6 +9,7 @@ here = path.abspath(path.dirname(__file__))
 #     long_description = f.read()
 
 dependencies = [
+    'colorama',
 ]
 
 setup(

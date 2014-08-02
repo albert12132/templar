@@ -8,10 +8,11 @@
 #
 ######################################################################
 
-import re
 import argparse
 import os
+import re
 import templar.link as link
+from templar import log
 from templar.markdown import Markdown
 
 
@@ -229,9 +230,10 @@ def get_template(filename, template_dirs):
         template = os.path.join(path, 'templates', filename)
         if file_exists(template):
             return file_read(template)
-    print(filename + ' could not be found in:')
+    log.warn('The template "' + filename \
+            + '" could not be found in these directories:')
     for path in dirs:
-        print(os.path.join(path, 'templates'))
+        log.log(os.path.join(path, 'templates'))
     exit(1)
 
 
@@ -404,10 +406,10 @@ def cmd_options(parser):
 def main(args, configs):
     if args.source:
         if not file_exists(args.source):
-            print('File ' + args.source + ' does not exist.')
+            log.warn('File ' + args.source + ' does not exist.')
             exit(1)
         elif not os.path.isfile(args.source):
-            print(args.source + ' is not a valid file')
+            log.warn(args.source + ' is not a valid file')
             exit(1)
         result = link.link(args.source)
         if args.markdown:
@@ -430,9 +432,8 @@ def main(args, configs):
 
     result = compile(args.template, configs)
     if not args.destination:
-        print(result)
+        log.log(result)
         return
     file_write(args.destination, result)
-    print('Finished compiling')
-    print('Result can be found at ' + args.destination)
+    log.info('Result can be found at ' + args.destination)
 
