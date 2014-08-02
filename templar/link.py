@@ -2,6 +2,7 @@ import argparse
 import os
 import re
 import sys
+import textwrap
 from collections import OrderedDict
 
 from templar.markdown import convert
@@ -126,9 +127,6 @@ def scrape_headers(text, builder):
 # Linker #
 ##########
 
-def add_whitespace(text, whitespace):
-    return whitespace + ('\n' + whitespace).join(line for line in text.split('\n'))
-
 re_include = re.compile(r"""
 (?:(?<=\n)|(?<=\A))
 ([ \t]*)      # \1 is leading whitespace
@@ -165,12 +163,17 @@ def substitute_links(text, cache, base_dir):
         regex = match.group(3)
         if not file_exists(filename):
             filename = os.path.join(base_dir, filename)
+            if not file_exists(filename):
+                print("Warning: could not find file", match.group(2),
+                        "or", filename)
+                return ''
+
         text = retrieve_and_link(filename, cache)
         if not regex:
             result = cache[filename + ':all']
         else:
             result = resolve_include_regex(regex, cache, filename)
-        return add_whitespace(result, match.group(1))
+        return textwrap.indent(result, match.group(1))
     return re_include.sub(link_sub, text)
 
 def retrieve_and_link(filename, cache):

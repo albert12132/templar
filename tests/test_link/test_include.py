@@ -358,6 +358,16 @@ class IncludeTest(LinkTest):
         """
         self.assertLink('text', expect, files)
 
+    def testNonexistentIncludeFile(self):
+        files = {
+            'text': """
+            <include does-not-exist.md>
+            """,
+        }
+        expect = """
+        """
+        self.assertLink('text', expect, files)
+
 
 if __name__ == '__main__':
     main()
