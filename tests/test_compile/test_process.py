@@ -221,7 +221,6 @@ class ConditionalTest(CompileTest):
         """
         self.assertProcess(template, attrs, expect)
 
-
 class ForLoopTest(CompileTest):
     def testIterableVariable(self):
         template = """
@@ -303,6 +302,127 @@ class ForLoopTest(CompileTest):
         <h1>Section 2:</h1>
 
         Test
+        """
+        self.assertProcess(template, attrs, expect)
+
+class MacroTest(CompileTest):
+    def testBasic(self):
+        template = """
+        Hello World!
+        {% def hello {{ boo }}, {{ here }} %}
+        {{ boo }} is {{ here }}
+        {% enddef %}
+
+        {% call hello {{ 1 + 3 }}, {{ var1 }} %}
+        """
+        attrs = {
+            'var1': 'hello'
+        }
+        expect = """
+        Hello World!
+
+
+        4 is hello
+        """
+        self.assertProcess(template, attrs, expect)
+
+    def testMacroDefinedAfterCall(self):
+        template = """
+        Hello World!
+
+        {% call hello {{ 1 + 3 }}, {{ var1 }} %}
+
+        {% def hello {{ boo }}, {{ here }} %}
+        {{ boo }} is {{ here }}
+        {% enddef %}
+
+        """
+        attrs = {
+            'var1': 'hello'
+        }
+        expect = """
+        Hello World!
+
+        4 is hello
+        """
+        self.assertProcess(template, attrs, expect)
+
+    def testMacroExtraArguments(self):
+        template = """
+        Hello World!
+
+        {% call hello {{ 1 + 3 }}, {{ var1 }}, {{ extra }} %}
+
+        {% def hello {{ boo }}, {{ here }} %}
+        {{ boo }} is {{ here }}
+        {% enddef %}
+
+        """
+        attrs = {
+            'var1': 'hello',
+            'extra': 'boo!',
+        }
+        expect = """
+        Hello World!
+
+        4 is hello
+        """
+        self.assertProcess(template, attrs, expect)
+
+    def testMacroUnmatchedVariables(self):
+        template = """
+        Hello World!
+
+        {% call hello {{ 1 + 3 }} %}
+
+        {% def hello {{ boo }}, {{ here }} %}
+        {{ boo }} is {{ here }}
+        {% enddef %}
+
+        """
+        attrs = {
+        }
+        expect = """
+        Hello World!
+
+        4 is
+        """
+        self.assertProcess(template, attrs, expect)
+
+    def testUndefinedMacro(self):
+        template = """
+        Hello World!
+
+        {% call hello {{ 1 + 3 }} %}
+        """
+        attrs = {
+        }
+        expect = """
+        Hello World!
+
+        """
+        self.assertProcess(template, attrs, expect)
+
+    def testOneMacroMultipleCalls(self):
+        template = """
+        Hello World!
+
+        {% call hello {{ 1 + 3 }} %}
+
+        {% call hello {{ 1 + 3 }} %}
+
+        {% def hello {{ boo }} %}
+        The number {{ boo }}
+        {% enddef %}
+        """
+        attrs = {
+        }
+        expect = """
+        Hello World!
+
+        The number 4
+
+        The number 4
         """
         self.assertProcess(template, attrs, expect)
 

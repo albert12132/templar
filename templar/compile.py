@@ -33,6 +33,8 @@ def process_inheritance(template_path, template_dirs):
 def process(template, attrs):
     if not isinstance(attrs, Frame):
         attrs = Frame(bindings=attrs)
+    template, macros = process_def(template)
+    template = process_call(template, attrs, macros)
     template = process_control(template, attrs)
     while expr_re.search(template):
         template = expr_re.sub(lambda m: str(evaluate(m.group(1),
@@ -95,6 +97,42 @@ for_re = r"""
     %\}
 """
 
+def_re = re.compile(r"""
+    \{%                     # opening brace
+        \s*def\s+
+        (\w+)               # \1 is the macro name
+        \s*
+        (                   # \2 is variable list
+            (?:
+                \{{2}\s*    # variable is of the form {{ var }}
+                .*?         # variable name
+                \s*\}{2}
+                \s*,?\s*    # comma
+            )+              # one or more variables
+        )
+    \s*%\}
+    (.*?)                   # \3 is macro body
+    \{%                     # closing brace
+        \s*enddef\s*
+    %\}
+""", re.S | re.X)
+
+call_re = re.compile(r"""
+    \{%
+        \s*call\s+
+        (\w+)               # \1 is macro name
+        \s*
+        (                   # \2 is variable list
+            (?:
+                \{{2}\s*    # argument is of the form {{ var }}
+                .*?         # argument
+                \s*\}{2}
+                \s*,?\s*    # comma
+            )+              # one or more arguments
+        )
+    \s*%\}
+""", re.S | re.X)
+
 def conditional_re(keyword):
     return r"""
     \{%                 # brace
@@ -148,6 +186,34 @@ def process_if(match, attrs):
         elif is_true(cond, attrs):
             return process(body, attrs).strip()
     return ''
+
+def process_call(template, attrs, macros):
+    def call_sub(match):
+        macro, arguments = match.groups()
+        arguments = expr_re.findall(arguments)
+        if macro not in macros:
+            log.warn('The macro "' + macro + '" is not defined.')
+            return ''
+        variables, body = macros[macro]
+        new_frame = Frame(parent=attrs)
+        for var, arg in zip(variables, arguments):
+            new_frame[var] = evaluate(arg, attrs)
+        return expr_re.sub(lambda m: eval_macro_body(m, new_frame), body.strip('\n'))
+    def eval_macro_body(match, attrs):
+        result = evaluate(match.group(1), attrs)
+        if not result:
+            return match.group(0)
+        return str(result)
+    return call_re.sub(call_sub, template)
+
+def process_def(template):
+    macros = {}
+    for macro, variables, body in def_re.findall(template):
+        variables = expr_re.findall(variables.replace('\n', ' '))
+        macros[macro] = (variables, body)
+    template = def_re.sub('', template)
+    return template, macros
+
 
 def is_true(expression, attrs):
     if evaluate(expression, attrs):
