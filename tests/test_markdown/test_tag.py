@@ -62,6 +62,24 @@ class BlockTagTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testBlockTagInParagraphs(self):
+        text = """
+        Stuff here
+        <block hello>
+        This is a paragraph.
+        </block hello>
+        """
+        expect = """
+        <p>Stuff here</p>
+
+        <block hello>
+
+        <p>This is a paragraph.</p>
+
+        </block hello>
+        """
+        self.assertMarkdown(text, expect)
+
 class TagTest(MarkdownTest):
     def testBasic(self):
         text = """

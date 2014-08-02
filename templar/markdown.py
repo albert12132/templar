@@ -70,6 +70,7 @@ def preprocess(text, markdown_obj):
     text, references = get_references(text)
     text = remove_pandoc_comments(text)
     text = handle_whitespace(text)
+    text = space_out_block_tags(text)
     return text, variables, references, footnotes
 
 TAB_SIZE = 4
@@ -227,6 +228,13 @@ re_pandoc_comment = re.compile(r"""
 """, re.S | re.X)
 def remove_pandoc_comments(text):
     return re_pandoc_comment.sub('', text)
+
+re_block_tag = re.compile(r"""
+    (\n|\A)[^\n]*?<\s*/?\s*block\s+[^\n]+?\s*>.*?(\n|\Z)
+""", re.X | re.S)
+def space_out_block_tags(text):
+    return re_block_tag.sub(lambda m: '\n' + m.group(0) + '\n', text)
+
 
 
 ######################
