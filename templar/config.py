@@ -7,6 +7,10 @@ import re
 # Path of the current file -- best not to change this
 FILEPATH = os.path.dirname(os.path.abspath(__file__))
 
+##################
+# Configurations #
+##################
+
 configurations = {
     # List of directories in which to search for templates
     'TEMPLATE_DIRS': [
@@ -23,7 +27,7 @@ configurations = {
 
     # Substitutions for the linker
     'SUBSTITUTIONS': [
-        # Add substitutinos of the form
+        # Add substitutions of the form
         # (regex, sub_function),
         # (regex, sub_function, condition),
     ],
