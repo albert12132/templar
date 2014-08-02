@@ -4,6 +4,7 @@ import re
 import templar.link as link
 import templar.compile as compile
 import templar.__main__ as config
+import textwrap
 
 from templar.markdown import convert, Markdown
 from templar.utils.core import TableOfContents
@@ -17,14 +18,11 @@ class TemplarTest(unittest.TestCase):
         with open(os.path.join(path, filename), 'r') as f:
             return f.read()
 
-    def stripLeadingWhitespace(self, text):
-        text = text.strip('\n')
-        length = len(re.match('\s*', text).group(0))
-        return '\n'.join(line[length:]
-                         for line in text.split('\n')).strip()
+    def dedent(self, text):
+        return textwrap.dedent(text).lstrip('\n').rstrip()
 
     def ignoreWhitespace(self, text):
-        text = self.stripLeadingWhitespace(text)
+        text = self.dedent(text)
         return re.sub('\s+', '', text, flags=re.S)
 
 class MarkdownTest(TemplarTest):
@@ -35,26 +33,26 @@ class MarkdownTest(TemplarTest):
         pass
 
     def assertMarkdown(self, markdown, output):
-        markdown = self.stripLeadingWhitespace(markdown)
-        output = self.stripLeadingWhitespace(output)
+        markdown = self.dedent(markdown)
+        output = self.dedent(output)
         try:
-            self.assertEqual(convert(markdown) + '\n', output + '\n')
+            self.assertEqual(output + '\n', convert(markdown) + '\n')
         except AssertionError:
             raise
 
     def assertMarkdownNotEqual(self, markdown, output):
-        markdown = self.stripLeadingWhitespace(markdown)
-        output = self.stripLeadingWhitespace(output)
+        markdown = self.dedent(markdown)
+        output = self.dedent(output)
         try:
-            self.assertNotEqual(convert(markdown), output)
+            self.assertNotEqual(output, convert(markdown))
         except AssertionError:
             raise
 
     def assertMarkdownIgnoreWS(self, markdown, output):
-        markdown = self.stripLeadingWhitespace(markdown)
+        markdown = self.dedent(markdown)
         try:
-            self.assertEqual(self.ignoreWhitespace(convert(markdown)),
-                             self.ignoreWhitespace(output))
+            self.assertEqual(self.ignoreWhitespace(output),
+                             self.ignoreWhitespace(convert(markdown)))
         except AssertionError:
             raise
 
@@ -71,7 +69,7 @@ class LinkTest(TemplarTest):
 
     def register_read(self, files):
         for filename, contents in files.items():
-            self.files[filename] = self.stripLeadingWhitespace(contents)
+            self.files[filename] = self.dedent(contents)
 
     def _read(self, filename):
         return self.files[filename]
@@ -83,15 +81,17 @@ class LinkTest(TemplarTest):
         if files:
             self.register_read(files)
         result = link.link(src) + '\n'
-        output = self.stripLeadingWhitespace(output) + '\n'
-        self.assertEqual(result, output)
+        output = self.dedent(output) + '\n'
+        self.assertEqual(output, result)
 
-    def assertBlock(self, src, output, expect_cache):
-        result, cache = link.retrieve_blocks(self.stripLeadingWhitespace(src))
+    def assertBlock(self, src, output, expect_cache, no_dedent=False):
+        result, cache = link.retrieve_blocks(self.dedent(src))
+        if not no_dedent:
+            expect_cache = {k: self.dedent(v) for k, v in expect_cache.items()}
         result += '\n'
-        output = self.stripLeadingWhitespace(output) + '\n'
-        self.assertEqual(result, output)
-        self.assertDictEqual(expect_cache, cache)
+        output = self.dedent(output) + '\n'
+        self.assertEqual(output, result)
+        self.assertEqual(expect_cache, cache)
 
     def assertSubstitution(self, src, output, subs, files=None, args=None):
         if files:
@@ -99,23 +99,14 @@ class LinkTest(TemplarTest):
         if not args:
             args = []
         args = MockArgparseObject(args)
-        result = self.stripLeadingWhitespace(src) + '\n'
+        result = self.dedent(src) + '\n'
         result = link.substitutions(result, subs, args)
-        output = self.stripLeadingWhitespace(output) + '\n'
-        self.assertEqual(result, output)
-
-    def assertDictEqual(self, dict1, dict2):
-        keys1 = set(dict1.keys())
-        keys2 = set(dict2.keys())
-        self.assertEqual(keys1, keys2)
-
-        for k in keys1:
-            self.assertEqual(self.stripLeadingWhitespace(dict1[k]),
-                             self.stripLeadingWhitespace(dict2[k]))
+        output = self.dedent(output) + '\n'
+        self.assertEqual(output, result)
 
     def assertHeaders(self, text, regex, translate, build, expect):
         toc_builder = make_mock_toc_builder(regex, translate, build)
-        expect = self.stripLeadingWhitespace(expect)
+        expect = self.dedent(expect)
         self.assertEqual(expect,
                          link.scrape_headers(text, toc_builder))
 
@@ -144,7 +135,7 @@ class CompileTest(TemplarTest):
 
     def register_read(self, files):
         for filename, contents in files.items():
-            self.files[filename] = self.stripLeadingWhitespace(contents)
+            self.files[filename] = self.dedent(contents)
 
     def _read(self, filename):
         return self.files[filename]
@@ -156,18 +147,18 @@ class CompileTest(TemplarTest):
         template_path = os.path.basename(template_path)
         if files:
             self.register_read(files)
-        actual = self.stripLeadingWhitespace(
+        actual = self.dedent(
                     compile.process_inheritance(
                              template_path, template_dirs))
-        expect = self.stripLeadingWhitespace(expect)
-        self.assertEqual(actual, expect)
+        expect = self.dedent(expect)
+        self.assertEqual(expect, actual)
 
     def assertProcess(self, template, attrs, expect):
-        template = self.stripLeadingWhitespace(template)
-        actual = self.stripLeadingWhitespace(
+        template = self.dedent(template)
+        actual = self.dedent(
                             compile.process(template, attrs))
-        expect = self.stripLeadingWhitespace(expect)
-        self.assertEqual(actual, expect)
+        expect = self.dedent(expect)
+        self.assertEqual(expect, actual)
 
 class ConfigTest(TemplarTest):
     def setUp(self):

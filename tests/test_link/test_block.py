@@ -65,9 +65,9 @@ class BlockTest(LinkTest):
         """
         expect_cache = {
             ':blockA': "\nThis is block content\n",
-            ':all': expect,
+            ':all': self.dedent(expect),
         }
-        self.assertBlock(text, expect, expect_cache)
+        self.assertBlock(text, expect, expect_cache, no_dedent=True)
 
     def testExternalWhitespace(self):
         text = """
@@ -252,11 +252,11 @@ class BlockTest(LinkTest):
             return hi
         """
         expect_cache = {
-            ':python': expect,
+            ':python': self.dedent(expect),
             ':python-sol': "    return hi",
-            ':all': expect,
+            ':all': self.dedent(expect),
         }
-        self.assertBlock(text, expect, expect_cache)
+        self.assertBlock(text, expect, expect_cache, no_dedent=True)
 
 if __name__ == '__main__':
     main()
