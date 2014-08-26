@@ -237,6 +237,7 @@ class Frame:
         try:
             return eval(variable)
         except:
+            log.warn('"{}" not found'.format(variable))
             return ''
 
     def __contains__(self, variable):
@@ -254,7 +255,9 @@ def evaluate(expression, attrs):
     else:
         try:
             return eval(expression, {}, attrs)
-        except:
+        except Exception as e:
+            log.warn('"{}" caused {}: {}'.format(expression,
+                e.__class__.__name__, e))
             return ''
 
 
