@@ -3,9 +3,7 @@
 #
 # Author: Albert Wu
 #
-# Compiler for 61A TA repo. Supports template inheritance and embedded
-# Python.
-#
+# Supports template inheritance and embedded Python.
 ######################################################################
 
 import argparse
@@ -452,7 +450,7 @@ def file_write(filename, text):
     This function exists to make test injection easier.
     """
     dirname = os.path.dirname(filename)
-    if not os.path.exists(dirname):
+    if dirname and not os.path.exists(dirname):
         os.makedirs(dirname)
     with open(filename, 'w') as f:
         f.write(text)
