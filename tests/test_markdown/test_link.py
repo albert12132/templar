@@ -27,7 +27,7 @@ class LinkTest(MarkdownTest):
         expect = '<p><a href="path/to/url" title="stuff here">link here</a></p>'
         self.assertMarkdown(text, expect)
 
-    def testNewline(self):
+    def testNewline_inText(self):
         text = """
         [link
         here](path/to/url)
@@ -35,6 +35,16 @@ class LinkTest(MarkdownTest):
         expect = """
         <p><a href="path/to/url">link
         here</a></p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testNewline_betweenDelimeters(self):
+        text = """
+        [link here]
+        (path/to/url)
+        """
+        expect = """
+        <p><a href="path/to/url">link here</a></p>
         """
         self.assertMarkdown(text, expect)
 

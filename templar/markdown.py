@@ -510,6 +510,7 @@ re_inline_link = re.compile(r"""
     (?<!\\)         # avoid escapes
     (!?)            # \1 is whether or not this is an img
     \[([^^\[\]]*?)\] # \2 is <a> text or <img> alt text
+    \s*             # whitespace between text and link is okay
     \(              # captures link
         \s*
         (.*?)       # \3 is link
@@ -556,7 +557,7 @@ def hash_inline_links(text, hashes, markdown_obj):
 re_reference_link = re.compile(r"""
     (?<!\\)             # avoid escapes
     (!?)                # \1 is whether or not link is an <img>
-    \[([^^\[\]]*?)\]     # \2 is link text or img alt text
+    \[([^^\[\]]*?)\]    # \2 is link text or img alt text
     \[
         (.*?)           # \3 is reference id
     \]
