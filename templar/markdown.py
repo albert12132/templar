@@ -726,7 +726,7 @@ def emphasis_sub(match):
     elif level == 1:
         return '<em>{0}</em>'.format(content)
 
-auto_escape_re = re.compile(r"&(?!#[xX]?[0-9a-fA-F]+)")
+auto_escape_re = re.compile(r"&(?!#[xX]?[0-9a-fA-F]+)(?!\w+;)")
 def auto_escape_sub(match):
     """Escapes ampersands (&) in normal text."""
     return escape(match.group(0))

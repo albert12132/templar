@@ -269,6 +269,10 @@ class MiscellaneousTest(MarkdownTest):
         self.assertMarkdown(r'\.', r"<p>.</p>")
         self.assertMarkdown(r'\!', r"<p>!</p>")
 
+    def testHtmlEscapes(self):
+        self.assertMarkdown("&", "<p>&amp;</p>")
+        self.assertMarkdown("&reg;", "<p>&reg;</p>")
+
     def testComment(self):
         text = """
         <!-- HTML comment -->
