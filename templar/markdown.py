@@ -587,7 +587,11 @@ def hash_reference_links(text, hashes, markdown_obj):
         if not ref:
             ref = content.strip().lower()
         ref = ref.replace('\n', ' ')
-        link, title = markdown_obj.references[ref]
+        if ref not in markdown_obj.references:
+            link, title = '', ''
+            log.warn('While parsing Markdown, encountered undefined reference: {}'.format(ref))
+        else:
+            link, title = markdown_obj.references[ref]
         if title:
             title = ' title="{0}"'.format(title)
         if is_img:

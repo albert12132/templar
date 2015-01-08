@@ -277,6 +277,15 @@ class ReferenceTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testNonExistentReference(self):
+        text = """
+        [link][ref] here
+        """
+        expect = """
+        <p><a href="">link</a> here</p>
+        """
+        self.assertMarkdown(text, expect)
+
 class FootnoteTest(MarkdownTest):
     def testBasic(self):
         text = """
