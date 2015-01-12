@@ -9,6 +9,7 @@
 import argparse
 import os
 import re
+import traceback
 import templar.link as link
 from templar import log
 from templar.markdown import Markdown
@@ -235,8 +236,7 @@ class Frame:
         try:
             return eval(variable)
         except:
-            log.warn('"{}" not found'.format(variable))
-            return ''
+            raise KeyError(variable)
 
     def __contains__(self, variable):
         variable = variable.replace('\n', ' ').strip()
@@ -256,6 +256,7 @@ def evaluate(expression, attrs):
         except Exception as e:
             log.warn('"{}" caused {}: {}'.format(expression,
                 e.__class__.__name__, e))
+            traceback.print_exc()
             return ''
 
 
