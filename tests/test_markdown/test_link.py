@@ -68,6 +68,33 @@ class LinkTest(MarkdownTest):
         """
         self.assertMarkdown(text, expect)
 
+    def testBacktickInLink(self):
+        text = """
+        [`link` here](path/to/url)
+        """
+        expect = """
+        <p><a href="path/to/url"><code>link</code> here</a></p>
+        """
+        self.assertMarkdown(text, expect)
+
+        text = """
+        [`extra_file_here.py`](path/to/url)
+        """
+        expect = """
+        <p><a href="path/to/url"><code>extra_file_here.py</code></a></p>
+        """
+        self.assertMarkdown(text, expect)
+
+    def testUnderscoresInLink(self):
+        text = """
+        [fall *in* the loop](path/to/url)
+        """
+        expect = """
+        <p><a href="path/to/url">fall <em>in</em> the loop</a></p>
+        """
+        self.assertMarkdown(text, expect)
+
+
 class ImageTest(MarkdownTest):
     def testBasic(self):
         text = "![link here](path/to/url)"

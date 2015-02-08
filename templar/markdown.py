@@ -248,9 +248,9 @@ def apply_hashes(text, markdown_obj):
     text = hash_blockquotes(text, hashes, markdown_obj)
     text = hash_codeblocks(text, hashes)
     text = hash_tables(text, hashes, markdown_obj)
+    text = hash_inline_links(text, hashes, markdown_obj)
     text = hash_codes(text, hashes)
     text = hash_footnote_reference(text, hashes, markdown_obj)
-    text = hash_inline_links(text, hashes, markdown_obj)
     text = hash_reference_links(text, hashes, markdown_obj)
     text = hash_tags(text, hashes)
     return text, hashes
