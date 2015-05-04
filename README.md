@@ -7,7 +7,7 @@ inheritance and modular source files, as well as the ability to define
 custom Markdown patterns.
 
 See the [Templar
-Documentation](http://albertwu.org/projects/templar/getting-started)
+Wiki](https://github.com/albert12132/templar/wiki/Getting-started)
 for help with getting started.
 
 Contributing
