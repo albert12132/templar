@@ -154,9 +154,11 @@ def config_main(args, configs=None):
         exit(1)
 
 def main():
-    paths = get_paths(os.path.abspath(__file__), os.getcwd())
+    templar_path = os.path.abspath(__file__)
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config-dir', default=os.getcwd(),
+                        help='Specify a directory that contains a configuration file')
     subparsers = parser.add_subparsers()
 
     markdown_parser = subparsers.add_parser('markdown')
@@ -166,19 +168,24 @@ def main():
     link_parser = subparsers.add_parser('link')
     link.cmd_options(link_parser)
     link_parser.set_defaults(
-            func=lambda args: link.main(args, configure(paths)))
+            func=lambda args: link.main(
+                args, configure(get_paths(templar_path, args.config_dir))))
 
     compile_parser = subparsers.add_parser('compile')
     compile.cmd_options(compile_parser)
     compile_parser.set_defaults(
-            func=lambda args: compile.main(args, configure(paths)))
+            func=lambda args: compile.main(
+                args, configure(get_paths(templar_path, args.config_dir))))
 
     config_parser = subparsers.add_parser('config')
     config_cmd_options(config_parser)
     config_parser.set_defaults(func=config_main)
 
     args = parser.parse_args()
-    args.func(args)
+    if hasattr(args, 'func'):
+        args.func(args)
+    else:
+        parser.print_help()
 
 if __name__ == '__main__':
     main()
