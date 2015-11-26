@@ -20,6 +20,9 @@ def flags():
                         help='Path to the destination file.')
     parser.add_argument('-c', '--config', default='config.py',
                         help='Path to a Templar configuration file.')
+    parser.add_argument('--print', action='store_true',
+                        help='Forces printing of result to stdout, '
+                        'even if --destination is specified')
     parser.add_argument('--debug', action='store_true',
                         help='Enable debugging messages.')
     return parser.parse_args()
@@ -30,7 +33,7 @@ def run(args):
     configuration = config.import_config(args.config)
     result = publish.publish_file(configuration, args.source, args.template)
 
-    if args.destination:
+    if args.destination and not args.print:
         with open(args.destination, 'w') as f:
             f.write(result)
     else:

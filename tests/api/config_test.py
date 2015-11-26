@@ -3,6 +3,7 @@
 from templar.api.config import ConfigBuilder
 from templar.api.config import ConfigBuilderError
 from templar.api.rules import Rule
+from templar.api.rules import CompilerRule
 
 import unittest
 import mock
@@ -51,6 +52,22 @@ class ConfigBuilderTest(unittest.TestCase):
         with self.assertRaises(ConfigBuilderError) as cm:
             ConfigBuilder().add_variable(4, 'val1')
         self.assertEqual('variable must be a string, but instead was: 4', str(cm.exception))
+
+    def testCompilerRules(self):
+        rule1, rule2 = CompilerRule(), CompilerRule()
+        builder = ConfigBuilder().add_compiler_rules(rule1, rule2)
+        self.assertSequenceEqual([rule1, rule2], builder.build().compiler_rules)
+
+        builder.clear_compiler_rules()
+        self.assertSequenceEqual([], builder.build().compiler_rules)
+
+    def testCompilerRules_preventNonRules(self):
+        with self.assertRaises(ConfigBuilderError) as cm:
+            ConfigBuilder().add_compiler_rules(4)
+        self.assertEqual(
+                'compiler_rule must be a CompilerRule, but instead was: 4',
+                str(cm.exception))
+
 
     def testPreprocessRules(self):
         rule1, rule2 = Rule(), Rule()
