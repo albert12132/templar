@@ -1,4 +1,4 @@
-"""Tests template/api/config.py"""
+"""Tests templar/api/config.py"""
 
 from templar.api.config import ConfigBuilder
 from templar.api.config import ConfigBuilderError
