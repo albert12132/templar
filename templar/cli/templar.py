@@ -31,12 +31,13 @@ def run(args):
     log.setLevel(logging.DEBUG if args.debug else logging.ERROR)
 
     configuration = config.import_config(args.config)
-    result = publish.publish_file(configuration, args.source, args.template)
-
-    if args.destination and not args.print:
-        with open(args.destination, 'w') as f:
-            f.write(result)
-    else:
+    result = publish.publish(
+            configuration,
+            args.source,
+            args.template,
+            args.destination,
+            args.print)
+    if not args.destination or args.print:
         print(result)
 
 def main():

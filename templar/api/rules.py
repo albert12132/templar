@@ -14,8 +14,23 @@ class Rule:
     only apply a rule if the source and destination of the publishing pipeline match the regexes.
     """
     def __init__(self, src=None, dst=None):
-        self.src = src
-        self.dst = dst
+        self._src_pattern = src
+        self._dst_pattern = dst
+
+    def applies(self, src, dst):
+        """Checks if this rule applies to the given src and dst paths, based on the src pattern and
+        dst pattern given in the constructor.
+
+        If src pattern was None, this rule will apply to any given src path (same for dst).
+        """
+        if self._src_pattern and re.search(self._src_pattern, src) is None:
+            return False
+        elif self._dst_pattern and re.search(self._dst_pattern, dst) is None:
+            return False
+        return True
+
+    def apply(self, content, variables):
+        raise NotImplementedError
 
 
 class SubstitutionRule(Rule):

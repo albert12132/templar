@@ -68,7 +68,6 @@ class ConfigBuilderTest(unittest.TestCase):
                 'compiler_rule must be a CompilerRule, but instead was: 4',
                 str(cm.exception))
 
-
     def testPreprocessRules(self):
         rule1, rule2 = Rule(), Rule()
         builder = ConfigBuilder().add_preprocess_rules(rule1, rule2)
@@ -98,6 +97,13 @@ class ConfigBuilderTest(unittest.TestCase):
         self.assertEqual(
                 'postprocess_rule must be a Rule object, but instead was: 4',
                 str(cm.exception))
+
+    def testRules(self):
+        rule1, rule2, rule3, = Rule(), CompilerRule(), Rule()
+        builder = ConfigBuilder().add_preprocess_rules(rule1)
+        builder.add_compiler_rules(rule2)
+        builder.add_postprocess_rules(rule3)
+        self.assertSequenceEqual([rule1, rule2, rule3], builder.build().rules)
 
     def testConfigIsImmutable(self):
         with mock.patch('os.path.isdir', lambda s: True):

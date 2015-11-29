@@ -154,6 +154,10 @@ class Config(object):
     def postprocess_rules(self):
         return tuple(self._postprocess_rules)
 
+    @property
+    def rules(self):
+        return self._preprocess_rules + self._compiler_rules + self._postprocess_rules
+
     def to_builder(self):
         return ConfigBuilder(
                 self._template_dirs,
