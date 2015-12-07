@@ -1,4 +1,4 @@
-from tests.test_utils import MarkdownTest, main
+from tests.markdown_test.test_utils import MarkdownTest
 
 class ParagraphTest(MarkdownTest):
     def testBasic(self):
@@ -321,7 +321,3 @@ class MiscellaneousTest(MarkdownTest):
         <p>Some stuff here</p>
         """
         self.assertMarkdown(text, expect)
-
-
-if __name__ == '__main__':
-    main()

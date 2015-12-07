@@ -7,7 +7,6 @@ Users can use this module with the following import statement:
 """
 
 from templar.api.rules.core import Rule
-from templar.api.rules.compiler_rules import CompilerRule
 
 import importlib.machinery
 import os.path
@@ -74,9 +73,9 @@ class ConfigBuilder(object):
 
     def add_compiler_rules(self, *compiler_rules):
         for rule in compiler_rules:
-            if not isinstance(rule, CompilerRule):
+            if not isinstance(rule, Rule):
                 raise ConfigBuilderError(
-                        'compiler_rule must be a CompilerRule, but instead was: ' + repr(rule))
+                        'compiler_rule must be a Rule, but instead was: ' + repr(rule))
         self._compiler_rules.extend(compiler_rules)
         return self
 

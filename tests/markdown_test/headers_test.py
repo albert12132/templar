@@ -1,4 +1,4 @@
-from tests.test_utils import MarkdownTest, main
+from tests.markdown_test.test_utils import MarkdownTest
 from templar.markdown import convert, Markdown
 
 class SetextTest(MarkdownTest):
@@ -298,8 +298,3 @@ class SlugTests(MarkdownTest):
         simple = '   leading whitespace\n='
         expect = '<h1 id="leading-whitespace">leading whitespace</h1>'
         self.assertEqual(expect, convert(simple))
-
-
-
-if __name__ == '__main__':
-    main()

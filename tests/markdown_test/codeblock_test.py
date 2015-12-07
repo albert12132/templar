@@ -1,4 +1,4 @@
-from tests.test_utils import MarkdownTest, main
+from tests.markdown_test.test_utils import MarkdownTest
 
 class CodeblockTest(MarkdownTest):
     def testBasic(self):
@@ -232,6 +232,3 @@ class CodeblockTest(MarkdownTest):
         <pre><code>Codeblock here</code></pre>
         """
         self.assertMarkdownIgnoreWS(text, expect)
-
-if __name__ == '__main__':
-    main()

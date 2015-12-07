@@ -1,4 +1,4 @@
-from tests.test_utils import MarkdownTest, main
+from tests.markdown_test.test_utils import MarkdownTest
 
 class BlockTagTest(MarkdownTest):
     def testDiv(self):
@@ -109,7 +109,3 @@ class TagTest(MarkdownTest):
         id="AT&T>here</span></p>
         """
         self.assertMarkdown(text, expect)
-
-
-if __name__ == '__main__':
-    main()

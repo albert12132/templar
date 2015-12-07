@@ -1,4 +1,4 @@
-from tests.test_utils import MarkdownTest, main
+from tests.markdown_test.test_utils import MarkdownTest
 
 class EmTest(MarkdownTest):
     def testBasic(self):
@@ -164,7 +164,3 @@ class CodeTest(MarkdownTest):
         text = "```` ``` ````"
         expect = "<p><code>```</code></p>"
         self.assertMarkdown(text, expect)
-
-
-if __name__ == '__main__':
-    main()

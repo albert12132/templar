@@ -5,7 +5,6 @@ import re
 from collections import OrderedDict
 from hashlib import sha1
 from random import randint
-from templar import log
 
 ##############
 # Public API #
@@ -589,7 +588,6 @@ def hash_reference_links(text, hashes, markdown_obj):
         ref = ref.replace('\n', ' ')
         if ref not in markdown_obj.references:
             link, title = '', ''
-            log.warn('While parsing Markdown, encountered undefined reference: {}'.format(ref))
         else:
             link, title = markdown_obj.references[ref]
         if title:
@@ -931,22 +929,17 @@ def main(args=None):
         args = parser.parse_args()
     if not args.source:
         text = ''
-        log.log('--- BEGIN MARKDOWN (type Ctrl-D to finish) ---')
         while True:
             try:
                 text += input() + '\n'
             except EOFError:
-                log.log('--- END MARKDOWN ---')
                 break
             except KeyboardInterrupt:
-                log.warn('Aborting script')
                 exit(1)
     else:
         if not os.path.exists(args.source):
-            log.warn('File ' + args.source + ' does not exist.')
             exit(1)
         elif not os.path.isfile(args.source):
-            log.warn(args.source + ' is not a valid file')
             exit(1)
         with open(args.source, 'r') as f:
             text = f.read()
@@ -954,6 +947,3 @@ def main(args=None):
     if args.destination:
         with open(args.destination, 'w') as f:
             f.write(result)
-        log.info('Result can be found in ' + args.destination)
-    else:
-        log.log(result)

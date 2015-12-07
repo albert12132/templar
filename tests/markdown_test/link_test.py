@@ -1,4 +1,4 @@
-from tests.test_utils import MarkdownTest, main
+from tests.markdown_test.test_utils import MarkdownTest
 
 class LinkTest(MarkdownTest):
     def testBasic(self):
@@ -425,7 +425,3 @@ class FootnoteTest(MarkdownTest):
         </div>
         """
         self.assertMarkdown(text, expect)
-
-
-if __name__ == '__main__':
-    main()

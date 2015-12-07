@@ -1,4 +1,4 @@
-from tests.test_utils import MarkdownTest, main
+from tests.markdown_test.test_utils import MarkdownTest
 
 class BlockquoteTest(MarkdownTest):
     def testBasic(self):
@@ -237,6 +237,3 @@ class BlockquoteTest(MarkdownTest):
         """
         self.assertMarkdownIgnoreWS(text, expect)
 
-
-if __name__ == '__main__':
-    main()

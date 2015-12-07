@@ -1,4 +1,4 @@
-from tests.test_utils import MarkdownTest, main
+from tests.markdown_test.test_utils import MarkdownTest
 
 class ListTest(MarkdownTest):
     def testBasic(self):
@@ -640,6 +640,3 @@ class ListItemTest(MarkdownTest):
         </ul>
         """
         self.assertMarkdown(text, expect)
-
-if __name__ == '__main__':
-    main()
