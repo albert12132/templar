@@ -17,6 +17,14 @@ class Rule:
     only apply a rule if the source and destination of the publishing pipeline match the regexes.
     """
     def __init__(self, src=None, dst=None):
+        if src is not None and not isinstance(src, str):
+            raise InvalidRule(
+                    "Rule's source pattern must be a string or None, "
+                    "but was type '{}'".format(type(src).__name__))
+        if dst is not None and not isinstance(dst, str):
+            raise InvalidRule(
+                    "Rule's destination pattern must be a string or None, "
+                    "but was type '{}'".format(type(src).__name__))
         self._src_pattern = src
         self._dst_pattern = dst
 
@@ -26,9 +34,9 @@ class Rule:
 
         If src pattern was None, this rule will apply to any given src path (same for dst).
         """
-        if self._src_pattern and re.search(self._src_pattern, src) is None:
+        if self._src_pattern and (src is None or re.search(self._src_pattern, src) is None):
             return False
-        elif self._dst_pattern and re.search(self._dst_pattern, dst) is None:
+        elif self._dst_pattern and (dst is None or re.search(self._dst_pattern, dst) is None):
             return False
         return True
 
@@ -48,7 +56,7 @@ class SubstitutionRule(Rule):
     based on a regex pattern and a substitution function. The substitution behaves exactly like
     re.sub.
     """
-    pattern = None  # Subclasses should override this variable with a regex string.
+    pattern = None  # Subclasses should override this variable with a string or compiled regex.
 
     def substitute(self, match):
         """A substitution function that returns the text with which to replace the given match.
@@ -59,10 +67,13 @@ class SubstitutionRule(Rule):
                 'a valid SubstitutionRule'.format(type(self).__name__))
 
     def apply(self, content, variables):
-        if not isinstance(self.pattern, str):
-            raise InvalidRule("{}'s pattern has type '{}', but expected a string.".format(
-                    type(self).__name__, type(self.pattern).__name__))
-        return re.sub(self.pattern, self.substitute, content)
+        if isinstance(self.pattern, str):
+            return re.sub(self.pattern, self.substitute, content)
+        elif hasattr(self.pattern, 'sub') and callable(self.pattern.sub):
+            return self.pattern.sub(self.substitute, content)
+        raise InvalidRule(
+            "{}'s pattern has type '{}', but expected a string or "
+            "compiled regex.".format(type(self).__name__, type(self.pattern).__name__))
 
 
 class InvalidRule(Exception):

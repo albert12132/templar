@@ -6,7 +6,8 @@ Users can use this module with the following import statement:
     from templar.api import config
 """
 
-from templar.api import rules
+from templar.api.rules.core import Rule
+from templar.api.rules.compiler_rules import CompilerRule
 
 import importlib.machinery
 import os.path
@@ -73,7 +74,7 @@ class ConfigBuilder(object):
 
     def add_compiler_rules(self, *compiler_rules):
         for rule in compiler_rules:
-            if not isinstance(rule, rules.CompilerRule):
+            if not isinstance(rule, CompilerRule):
                 raise ConfigBuilderError(
                         'compiler_rule must be a CompilerRule, but instead was: ' + repr(rule))
         self._compiler_rules.extend(compiler_rules)
@@ -86,7 +87,7 @@ class ConfigBuilder(object):
 
     def add_preprocess_rules(self, *preprocess_rules):
         for rule in preprocess_rules:
-            if not isinstance(rule, rules.Rule):
+            if not isinstance(rule, Rule):
                 raise ConfigBuilderError(
                         'preprocess_rule must be a Rule object, but instead was: ' + repr(rule))
         self._preprocess_rules.extend(preprocess_rules)
@@ -98,7 +99,7 @@ class ConfigBuilder(object):
 
     def add_postprocess_rules(self, *postprocess_rules):
         for rule in postprocess_rules:
-            if not isinstance(rule, rules.Rule):
+            if not isinstance(rule, Rule):
                 raise ConfigBuilderError(
                         'postprocess_rule must be a Rule object, but instead was: ' + repr(rule))
         self._postprocess_rules.extend(postprocess_rules)

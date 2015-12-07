@@ -2,8 +2,8 @@
 
 from templar.api.config import ConfigBuilder
 from templar.api.config import ConfigBuilderError
-from templar.api.rules import Rule
-from templar.api.rules import CompilerRule
+from templar.api.rules.core import Rule
+from templar.api.rules.compiler_rules import CompilerRule
 
 import unittest
 import mock

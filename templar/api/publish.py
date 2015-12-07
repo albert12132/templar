@@ -7,6 +7,7 @@ Users can use this module with the following import statement:
 """
 
 from templar import linker
+from templar.api.config import Config
 
 import jinja2
 
@@ -39,6 +40,11 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
     RETURNS:
     str; the result of the publishing pipeline.
     """
+    if not isinstance(config, Config):
+        raise PublishError(
+                "config must be a Config object, "
+                "but instead was type '{}'".format(type(config).__name__))
+
     if source is None and template is None:
         raise PublishError('When publishing, source and template cannot both be omitted.')
 
