@@ -6,6 +6,8 @@ Users can use this module with the following import statement:
     from templar.api.rules import core
 """
 
+from templar.exceptions import TemplarError
+
 import re
 
 
@@ -76,5 +78,5 @@ class SubstitutionRule(Rule):
             "compiled regex.".format(type(self).__name__, type(self.pattern).__name__))
 
 
-class InvalidRule(Exception):
+class InvalidRule(TemplarError):
     pass

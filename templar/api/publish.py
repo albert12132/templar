@@ -8,8 +8,10 @@ Users can use this module with the following import statement:
 
 from templar import linker
 from templar.api.config import Config
+from templar.exceptions import TemplarError
 
 import jinja2
+import os
 
 def publish(config, source=None, template=None, destination=None, jinja_env=None, no_write=False):
     """Given a config, performs an end-to-end publishing pipeline and returns the result:
@@ -56,6 +58,8 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
 
         # Compiling stage.
         block_variables = {}
+        # TODO: Applying the rule to every block can cause unexpected behavior with variable rules,
+        # since the variable modifications might collide.
         for name, content in block_map.get_block_variables().items():
             for rule in config.rules:
                 if rule.applies(source, destination):
@@ -75,10 +79,13 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
 
     # Writing stage.
     if not no_write and destination:
+        destination_dir = os.path.dirname(destination)
+        if destination_dir != '' and not os.path.isdir(destination_dir):
+            os.makedirs(destination_dir)
         with open(destination, 'w') as f:
             f.write(result)
     return result
 
 
-class PublishError(Exception):
+class PublishError(TemplarError):
     pass

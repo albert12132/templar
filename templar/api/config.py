@@ -7,12 +7,10 @@ Users can use this module with the following import statement:
 """
 
 from templar.api.rules.core import Rule
+from templar.exceptions import TemplarError
 
 import importlib.machinery
 import os.path
-
-class ConfigBuilderError(Exception):
-    pass
 
 class ConfigBuilder(object):
     """Builds a Config for Templar's publishing pipeline.
@@ -67,11 +65,17 @@ class ConfigBuilder(object):
         self._variables[variable] = value
         return self
 
+    def add_variables(self, variable_map):
+        # Loop through variables instead of using dict.update so we can validate each variable.
+        for variable, value in variable_map.items():
+            self.add_variable(variable, value)
+        return self
+
     def clear_variables(self):
         self._variables = {}
         return self
 
-    def add_compiler_rules(self, *compiler_rules):
+    def append_compiler_rules(self, *compiler_rules):
         for rule in compiler_rules:
             if not isinstance(rule, Rule):
                 raise ConfigBuilderError(
@@ -79,12 +83,19 @@ class ConfigBuilder(object):
         self._compiler_rules.extend(compiler_rules)
         return self
 
+    def prepend_compiler_rules(self, *compiler_rules):
+        for rule in compiler_rules:
+            if not isinstance(rule, Rule):
+                raise ConfigBuilderError(
+                        'compiler_rule must be a Rule, but instead was: ' + repr(rule))
+        self._compiler_rules = list(compiler_rules) + self._compiler_rules
+        return self
+
     def clear_compiler_rules(self):
         self._compiler_rules = []
         return self
 
-
-    def add_preprocess_rules(self, *preprocess_rules):
+    def append_preprocess_rules(self, *preprocess_rules):
         for rule in preprocess_rules:
             if not isinstance(rule, Rule):
                 raise ConfigBuilderError(
@@ -92,16 +103,32 @@ class ConfigBuilder(object):
         self._preprocess_rules.extend(preprocess_rules)
         return self
 
+    def prepend_preprocess_rules(self, *preprocess_rules):
+        for rule in preprocess_rules:
+            if not isinstance(rule, Rule):
+                raise ConfigBuilderError(
+                        'preprocess_rule must be a Rule object, but instead was: ' + repr(rule))
+        self._preprocess_rules = list(preprocess_rules) + self._preprocess_rules
+        return self
+
     def clear_preprocess_rules(self):
         self._preprocess_rules = []
         return self
 
-    def add_postprocess_rules(self, *postprocess_rules):
+    def append_postprocess_rules(self, *postprocess_rules):
         for rule in postprocess_rules:
             if not isinstance(rule, Rule):
                 raise ConfigBuilderError(
                         'postprocess_rule must be a Rule object, but instead was: ' + repr(rule))
         self._postprocess_rules.extend(postprocess_rules)
+        return self
+
+    def prepend_postprocess_rules(self, *postprocess_rules):
+        for rule in postprocess_rules:
+            if not isinstance(rule, Rule):
+                raise ConfigBuilderError(
+                        'postprocess_rule must be a Rule object, but instead was: ' + repr(rule))
+        self._postprocess_rules = list(postprocess_rules) + self._postprocess_rules
         return self
 
     def clear_postprocess_rules(self):
@@ -175,8 +202,18 @@ def import_config(config_path):
     """
     if not os.path.isfile(config_path):
         raise ConfigBuilderError(
-                'Could not find Templar configuration file: ' + config_path)
+                'Could not find config file: ' + config_path)
     loader = importlib.machinery.SourceFileLoader(config_path, config_path)
     module = loader.load_module()
-    return module.configuration
+
+    if not hasattr(module, 'config') or not isinstance(module.config, Config):
+        raise ConfigBuilderError(
+            'Could not load config file "{}": config files must contain '
+            'a variable called "config" that is '
+            'assigned to a Config object.'.format(config_path))
+    return module.config
+
+
+class ConfigBuilderError(TemplarError):
+    pass
 

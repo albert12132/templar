@@ -90,8 +90,8 @@ class PublishTest(unittest.TestCase):
             def apply(self, content, variables):
                 return content + 'rule2'
         config_builder = ConfigBuilder()
-        config_builder.add_preprocess_rules(AppliedRule(src=r'\.md'), NotAppliedRule(dst=r'\.html'))
-        config_builder.add_postprocess_rules(AppliedRule(), NotAppliedRule(src=r'\.py'))
+        config_builder.append_preprocess_rules(AppliedRule(src=r'\.md'), NotAppliedRule(dst=r'\.html'))
+        config_builder.append_postprocess_rules(AppliedRule(), NotAppliedRule(src=r'\.py'))
 
         with self.mock_open(file_map):
             result = publish(config_builder.build(), source='docA.md', no_write=True)
@@ -120,7 +120,7 @@ class PublishTest(unittest.TestCase):
             def apply(self, content, variables):
                 return content.upper()
         config_builder = ConfigBuilder()
-        config_builder.add_preprocess_rules(UpperCaseRule())
+        config_builder.append_preprocess_rules(UpperCaseRule())
 
         with self.mock_open(file_map):
             result = publish(

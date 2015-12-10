@@ -2,6 +2,8 @@
 Linker utilities.
 """
 
+from templar.exceptions import TemplarError
+
 import os
 import re
 
@@ -30,8 +32,7 @@ class BlockMap(object):
         """Returns a dictionary mapping block names to block contents, where all block names
         correspond to blocks in the source file only.
         """
-        if self.source not in self._blocks:
-            raise SourceNotFound(self.source)
+        assert self.source in self._blocks, "BlockMap's source path should be in the map."
         return self._blocks[self.source].copy()
 
     def get_variables(self):
@@ -254,16 +255,16 @@ def indent(content, whitespace):
 # Exceptions #
 ##############
 
-class InvalidBlockName(Exception):
+class InvalidBlockName(TemplarError):
     pass
 
-class IncludeNonExistentBlock(Exception):
+class IncludeNonExistentBlock(TemplarError):
     pass
 
-class CyclicalIncludeError(Exception):
+class CyclicalIncludeError(TemplarError):
     def __init__(self, link_stack, last_file):
         super().__init__(' -> '.join(link_stack + [last_file]))
 
-class SourceNotFound(Exception):
+class SourceNotFound(TemplarError):
     def __init__(self, source_path):
         super().__init__('Could not find source file: ' + source_path)

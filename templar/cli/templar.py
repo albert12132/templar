@@ -2,15 +2,17 @@
 
 from templar.api import config
 from templar.api import publish
+from templar.exceptions import TemplarError
 
 import argparse
 import logging
+import sys
 
 LOGGING_FORMAT = '%(levelname)s %(filename)s:%(lineno)d> %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT)
 log = logging.getLogger('templar')
 
-def flags():
+def flags(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--source',
                         help='Path to a source file with Markdown content.')
@@ -25,20 +27,30 @@ def flags():
                         'even if --destination is specified')
     parser.add_argument('--debug', action='store_true',
                         help='Enable debugging messages.')
+    if args is not None:
+        return parser.parse_args(args)
     return parser.parse_args()
 
 def run(args):
     log.setLevel(logging.DEBUG if args.debug else logging.ERROR)
 
-    configuration = config.import_config(args.config)
-    result = publish.publish(
-            configuration,
-            args.source,
-            args.template,
-            args.destination,
-            args.print)
-    if not args.destination or args.print:
-        print(result)
+    try:
+        configuration = config.import_config(args.config)
+        result = publish.publish(
+                configuration,
+                source=args.source,
+                template=args.template,
+                destination=args.destination,
+                no_write=args.print)
+    except TemplarError as e:
+        if args.debug:
+            raise
+        else:
+            print('{}: {}'.format(type(e).__name__, str(e)), file=sys.stderr)
+            exit(1)
+    else:
+        if not args.destination or args.print:
+            print(result)
 
 def main():
     run(flags())
