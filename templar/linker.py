@@ -7,47 +7,77 @@ from templar.exceptions import TemplarError
 import os
 import re
 
-def get_block_map(source_path):
-    """Processes the contents of source_path and returns a dictionary of block names to Blocks."""
+def link(source_path):
+    """Links the content found at source_path and represents a Block that represents the content."""
     if not os.path.isfile(source_path):
         raise SourceNotFound(source_path)
     with open(source_path, 'r') as f:
         content = f.read()
-    block_map = BlockMap(source_path)  # The map will be populated with the following function call.
-    link_stack = LinkStack(source_path)
-    convert_block_to_string(content, block_map, link_stack, source_path)
-    return block_map
+    block_map = BlockMap()  # The map will be populated with the following function call.
+    all_block = convert_string_to_block(content, block_map, LinkStack(source_path), source_path)
+    return all_block, block_map.get_variables()
 
+
+def get_block_dict(top_level_block):
+    """Returns a dictionary of block names (str) to block contents (str) for all child blocks, as
+    well as the original block itself.
+
+    The block_dict argument is only used for recursive calls and should not 
+    """
+    block_stack = [top_level_block]
+    block_dict = {}
+    while block_stack:
+        block = block_stack.pop()
+        block_dict[block.name] = str(block)
+        for segment in block.segments:
+            if isinstance(segment, Block):
+                block_stack.append(segment)
+    return block_dict
+
+
+class Block(object):
+    def __init__(self, source_path, name, segments):
+        self.source_path = source_path
+        self.name = name
+        self.segments = segments
+        self._str = None  # Cache the str representation of this block.
+
+    def apply_rule(self, rule):
+        self._str = None  # Clear str cache.
+        for i, segment in enumerate(self.segments):
+            assert isinstance(segment, str) or isinstance(segment, Block)
+            if isinstance(segment, str):
+                self.segments[i] = rule.apply(segment)
+            else:
+                segment.apply_rule(rule)  # Recursively apply rule onto nested blocks.
+
+    def __str__(self):
+        if self._str is None:
+            self._str = '\n'.join(str(segment) for segment in self.segments)
+        return self._str
+
+
+###########
+# Private #
+###########
 
 class BlockMap(object):
     """A map of block names to block contents (str -> str)."""
-    def __init__(self, source):
+    def __init__(self):
         # _blocks will be a nested dictionary. Specifically,
         # { filename : { block_name : block_contents } }
         self._blocks = {}
         self._variables = {}
-        self.source = source
-
-    def get_block_variables(self):
-        """Returns a dictionary mapping block names to block contents, where all block names
-        correspond to blocks in the source file only.
-        """
-        assert self.source in self._blocks, "BlockMap's source path should be in the map."
-        return self._blocks[self.source].copy()
 
     def get_variables(self):
         return self._variables
 
-    ###########
-    # Private #
-    ###########
-
-    def add_block(self, filename, block_name, content):
-        file_blocks = self._blocks.setdefault(filename, {})
-        if block_name in file_blocks:
+    def add_block(self, block):
+        file_blocks = self._blocks.setdefault(block.source_path, {})
+        if block.name in file_blocks:
             raise InvalidBlockName(
-                'Found multiple blocks with name "{}" in {}'.format(block_name, filename))
-        file_blocks[block_name] = content
+                'Found multiple blocks with name "{}" in {}'.format(block.name, block.source_path))
+        file_blocks[block.name] = block
 
     def has_block(self, filename, block_name):
         return filename in self._blocks and block_name in self._blocks[filename]
@@ -59,10 +89,6 @@ class BlockMap(object):
     def add_variable(self, variable, value):
         self._variables[variable] = value
 
-
-###########
-# Private #
-###########
 
 class LinkStack(object):
     """A stack used for keeping track of link dependencies, detecting cycles if they appear."""
@@ -79,7 +105,7 @@ class LinkStack(object):
 
 
 block_regex = re.compile(r"""
-    [^\n]*?               # strip out extra leading characters
+    (?:\n|\A)[^\n]*?      # strip out extra leading characters
     <\s*
         block\s+([\w -]+) # \1 is the block name. Matches alphanumerics, hyphen, and space
     \s*>
@@ -92,8 +118,8 @@ block_regex = re.compile(r"""
     [^\n]*                # strip out extra ending characters
 """, re.S | re.X)
 
-def convert_block_to_string(content, block_map, link_stack, source_path, block_name='all'):
-    """Converts the specified block content into a string.
+def convert_string_to_block(content, block_map, link_stack, source_path, block_name='all'):
+    """Converts the specified block content (string) into a Block object.
 
     Nested blocks are recursively converted into strings and cached in the block_map. Include tags
     are processed as well. The resulting block string is also added to the block_map, along with any
@@ -109,14 +135,20 @@ def convert_block_to_string(content, block_map, link_stack, source_path, block_n
                   'all'
 
     RETURNS:
-    str; the result of converting the block content.
+    Block; the result of converting the block content.
     """
     segments = []
     inner_block_name = None
     for i, match in enumerate(block_regex.split(content)):
-        if i % 3 == 0 and match != '':
+        if i % 3 == 0:
             # Non-block text. Process for links and add to segments. Omit empty matches.
-            segments.extend(process_links(match, block_map, link_stack, source_path))
+            # Strip leading newline, which is not removed by the block_regex.
+            if i > 0 and match.startswith('\n'):
+                match = match[1:]
+
+            processed = process_links(match, block_map, link_stack, source_path)
+            if processed != '':
+                segments.append(processed)
         elif i % 3 == 1:
             # Block name.
             if match == 'all':
@@ -125,7 +157,7 @@ def convert_block_to_string(content, block_map, link_stack, source_path, block_n
             inner_block_name = match
         elif i % 3 == 2:
             # Block contents. Recursively convert contents to a Block.
-            inner_block = convert_block_to_string(
+            inner_block = convert_string_to_block(
                 match,
                 block_map,
                 link_stack,
@@ -133,9 +165,9 @@ def convert_block_to_string(content, block_map, link_stack, source_path, block_n
                 inner_block_name)
             segments.append(inner_block)
 
-    result = ''.join(segments)
-    block_map.add_block(source_path, block_name, result)
-    return result
+    block = Block(source_path, block_name, segments)
+    block_map.add_block(block)
+    return block
 
 
 include_regex = re.compile(r"""
@@ -196,7 +228,7 @@ def process_links(content, block_map, link_stack, source_path):
                     block_map,
                     link_stack)
             segments.append(block)
-    return segments
+    return ''.join(segments)
 
 
 def retrieve_block_from_map(
@@ -234,7 +266,7 @@ def retrieve_block_from_map(
     if not block_map.has_block(filename, block_name):
         with open(filename, 'r') as f:
             content = f.read()
-        convert_block_to_string(content, block_map, link_stack, filename)
+        convert_string_to_block(content, block_map, link_stack, filename)
 
     # If the block is not in the map even after converting, then the block doesn't exist.
     if not block_map.has_block(filename, block_name):
@@ -242,7 +274,8 @@ def retrieve_block_from_map(
             source_path + ' tried to include a non-existent block: ' + filename + ':' + block_name)
 
     link_stack.pop()
-    return indent(block_map.get_block(filename, block_name), leading_whitespace)
+    # Convert the Block to a string and indent.
+    return indent(str(block_map.get_block(filename, block_name)), leading_whitespace)
 
 
 def indent(content, whitespace):

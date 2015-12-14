@@ -8,6 +8,7 @@ Users can use this module with the following import statement:
 
 from templar import linker
 from templar.api.config import Config
+from templar.api.rules.core import VariableRule
 from templar.exceptions import TemplarError
 
 import jinja2
@@ -53,18 +54,18 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
     variables = config.variables
     if source:
         # Linking stage.
-        block_map = linker.get_block_map(source)
-        variables.update(block_map.get_variables())
+        all_block, extracted_variables = linker.link(source)
+        variables.update(extracted_variables)
 
         # Compiling stage.
         block_variables = {}
-        # TODO: Applying the rule to every block can cause unexpected behavior with variable rules,
-        # since the variable modifications might collide.
-        for name, content in block_map.get_block_variables().items():
-            for rule in config.rules:
-                if rule.applies(source, destination):
-                    content = rule.apply(content, variables)
-            block_variables[name] = content
+        for rule in config.rules:
+            if rule.applies(source, destination):
+                if isinstance(rule, VariableRule):
+                    variables.update(rule.apply(str(all_block)))
+                else:
+                    all_block.apply_rule(rule)
+        block_variables.update(linker.get_block_dict(all_block))
         variables['blocks'] = block_variables   # Blocks are namespaced with 'blocks'.
 
     # Templating stage.

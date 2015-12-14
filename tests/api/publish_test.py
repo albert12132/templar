@@ -4,6 +4,7 @@ from templar.api.config import ConfigBuilder
 from templar.api.publish import PublishError
 from templar.api.publish import publish
 from templar.api.rules.core import Rule
+from templar.api.rules.core import VariableRule
 
 import jinja2
 import unittest
@@ -84,18 +85,47 @@ class PublishTest(unittest.TestCase):
             'docA.md': 'original content',
         }
         class AppliedRule(Rule):
-            def apply(self, content, variables):
+            def apply(self, content):
                 return content + ' rule1'
         class NotAppliedRule(Rule):
-            def apply(self, content, variables):
+            def apply(self, content):
                 return content + 'rule2'
         config_builder = ConfigBuilder()
-        config_builder.append_preprocess_rules(AppliedRule(src=r'\.md'), NotAppliedRule(dst=r'\.html'))
+        config_builder.append_preprocess_rules(
+                AppliedRule(src=r'\.md'),
+                NotAppliedRule(dst=r'\.html'))
         config_builder.append_postprocess_rules(AppliedRule(), NotAppliedRule(src=r'\.py'))
 
         with self.mock_open(file_map):
             result = publish(config_builder.build(), source='docA.md', no_write=True)
         self.assertEquals('original content rule1 rule1', result)
+
+    def testOnlySource_withRulesAndBlocks(self):
+        file_map = {
+            'docA.md': self.join_lines(
+                'outer content',
+                '<block blockA>',
+                'inner content',
+                '</block blockA>',
+                'outer content'),
+        }
+        class AppliedRule(Rule):
+            counter = 0
+            def apply(self, content):
+                self.counter += 1
+                return 'segment {}: '.format(self.counter) + content
+        config_builder = ConfigBuilder()
+        config_builder.append_postprocess_rules(AppliedRule())
+
+        with self.mock_open(file_map):
+            result = publish(config_builder.build(), source='docA.md', no_write=True)
+        self.assertEquals(
+            self.join_lines(
+                'segment 1: outer content',
+                'segment 2: inner content',
+                'segment 3: outer content'),
+            result)
+
 
     def testSourceAndTemplate(self):
         file_map = {
@@ -111,16 +141,20 @@ class PublishTest(unittest.TestCase):
                 '<title>{{ title }}</title>',  # Use the variable defined in the content.
                 '<p>',
                 '{{ blocks.first }}',   # Use the block defined in the content.
+                '{{ var }}',            # Use the variable defined by VarRule, below.
                 '</p>')
         })
         jinja_env = jinja2.Environment(loader=template_loader)
 
         # Test rule application.
         class UpperCaseRule(Rule):
-            def apply(self, content, variables):
+            def apply(self, content):
                 return content.upper()
+        class VarRule(VariableRule):
+            def extract(self, content):
+                return {'var': 'val'}
         config_builder = ConfigBuilder()
-        config_builder.append_preprocess_rules(UpperCaseRule())
+        config_builder.append_preprocess_rules(UpperCaseRule(), VarRule())
 
         with self.mock_open(file_map):
             result = publish(
@@ -134,6 +168,7 @@ class PublishTest(unittest.TestCase):
                     '<title>Test</title>',
                     '<p>',
                     'INSIDE BLOCK',
+                    'val',
                     '</p>'),
                 result)
 
@@ -143,8 +178,8 @@ class PublishTest(unittest.TestCase):
         })
         jinja_env = jinja2.Environment(loader=template_loader)
 
-        # Use a simple mock_open instead of this test's mock_open method, since we don't need to open
-        # multiple files.
+        # Use a simple mock_open instead of this test's mock_open method, since we don't need to
+        # open multiple files.
         mock_open = mock.mock_open()
         with mock.patch('builtins.open', mock_open):
             result = publish(
@@ -169,7 +204,8 @@ class PublishTest(unittest.TestCase):
         """
         def side_effect(filename, mode):
             if mode == 'r':
-                assert filename in file_map, 'File ' + filename + ' not found in ' + str(list(file_map))
+                assert filename in file_map, \
+                        'File ' + filename + ' not found in ' + str(list(file_map))
             self.mock_is_file.side_effect = lambda f: f in file_map
             return mock.mock_open(read_data=file_map[filename])(filename, mode)
 

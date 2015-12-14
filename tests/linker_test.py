@@ -1,6 +1,8 @@
 """Tests template/linker/blocks.py"""
 
-from templar.linker import get_block_map
+from templar.linker import link
+from templar.linker import get_block_dict
+from templar.linker import Block
 from templar.linker import SourceNotFound
 from templar.linker import InvalidBlockName
 from templar.linker import IncludeNonExistentBlock
@@ -9,7 +11,7 @@ from templar.linker import CyclicalIncludeError
 import unittest
 import mock
 
-class GetBlockMapTest(unittest.TestCase):
+class LinkTest(unittest.TestCase):
     def setUp(self):
         self.is_file_patcher = mock.patch('os.path.isfile')
         self.mock_is_file = self.is_file_patcher.start()
@@ -21,7 +23,7 @@ class GetBlockMapTest(unittest.TestCase):
     def testNonExistentSourceFile(self):
         self.mock_is_file.return_value = False
         with self.assertRaises(SourceNotFound) as cm:
-            get_block_map('no/such/path')
+            link('no/such/path')
         self.assertEqual('Could not find source file: no/such/path', str(cm.exception))
 
     def testNoBlocksAndIncludes(self):
@@ -29,23 +31,23 @@ class GetBlockMapTest(unittest.TestCase):
         'Hello world',
         'Second line')
         with self.mock_open({'some/path': data}):
-            block_map = get_block_map('some/path')
+            block, variables = link('some/path')
 
-        self.assertEqual({
-            'all': data
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_all = Block('some/path', 'all', [data])
+        self.assertBlockEqual(block_all, block)
 
     def testBlocks_emptyBlock(self):
         data = self.join_lines(
         '<block foo>',
         '</block foo>')
         with self.mock_open({'some/path': data}):
-            block_map = get_block_map('some/path')
+            block, variables = link('some/path')
 
-        self.assertEqual({
-            'all': '',
-            'foo': '',    # Block should be empty.
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_foo = Block('some/path', 'foo', [])  # Block should be empty.
+        block_all = Block('some/path', 'all', [block_foo])
+        self.assertBlockEqual(block_all, block)
 
     def testBlocks_multipleBlocks(self):
         data = self.join_lines(
@@ -62,24 +64,23 @@ class GetBlockMapTest(unittest.TestCase):
         'content',
         '</block three>')
         with self.mock_open({'some/path': data}):
-            block_map = get_block_map('some/path')
+            block, variables = link('some/path')
 
-        self.assertEqual({
-            'all': self.join_lines(
-                'def one():',
-                '    return 1',
-                'Intervening text',
-                'def two():',
-                '    return 2',
-                'content'),
-            'one': self.join_lines(
-                'def one():',
-                '    return 1'),
-            'two': self.join_lines(
-                'def two():',
-                '    return 2'),
-            'three': 'content',
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_one = Block('some/path', 'one', [self.join_lines(
+            'def one():',
+            '    return 1')])
+        block_two = Block('some/path', 'two', [self.join_lines(
+            'def two():',
+            '    return 2')])
+        block_three = Block('some/path', 'three', ['content'])
+        block_all = Block('some/path', 'all', [
+            block_one,
+            'Intervening text',
+            block_two,
+            block_three
+        ])
+        self.assertBlockEqual(block_all, block)
 
     def testBlocks_stripLeadingCharacters(self):
         data = self.join_lines(
@@ -88,17 +89,14 @@ class GetBlockMapTest(unittest.TestCase):
         '    return None',
         '# </block foo>')
         with self.mock_open({'some/path': data}):
-            block_map = get_block_map('some/path')
+            block, variables = link('some/path')
 
-        self.assertEqual({
-            'all': self.join_lines(
-                'def foo():',
-                '    return None'),
-            'foo': self.join_lines(
-                'def foo():',
-                '    return None'),
-
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_foo = Block('some/path', 'foo', [self.join_lines(
+            'def foo():',
+            '    return None')])
+        block_all = Block('some/path', 'all', [block_foo])
+        self.assertBlockEqual(block_all, block)
 
     def testBlocks_nested(self):
         data = self.join_lines(
@@ -110,19 +108,16 @@ class GetBlockMapTest(unittest.TestCase):
         'outer content',
         '</block outer>')
         with self.mock_open({'some/path': data}):
-            block_map = get_block_map('some/path')
+            block, variables = link('some/path')
 
-        self.assertEqual({
-            'all': self.join_lines(
-                'outer content',
-                'inner content',
-                'outer content'),
-            'outer': self.join_lines(
-                'outer content',
-                'inner content',
-                'outer content'),
-            'inner': 'inner content',
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_inner = Block('some/path', 'inner', ['inner content'])
+        block_outer = Block('some/path', 'outer', [
+            'outer content',
+            block_inner,
+            'outer content'])
+        block_all = Block('some/path', 'all', [block_outer])
+        self.assertBlockEqual(block_all, block)
 
     def testBlocks_preventBlockCalledAll(self):
         data = self.join_lines(
@@ -131,7 +126,7 @@ class GetBlockMapTest(unittest.TestCase):
         '</block all>')
         with self.mock_open({'some/path': data}):
             with self.assertRaises(InvalidBlockName) as cm:
-                block_map = get_block_map('some/path')
+                link('some/path')
         self.assertEqual(
                 '"all" is a reserved block name, but found block named "all" in some/path',
                 str(cm.exception))
@@ -146,8 +141,9 @@ class GetBlockMapTest(unittest.TestCase):
         '</block foo>')
         with self.mock_open({'some/path': data}):
             with self.assertRaises(InvalidBlockName) as cm:
-                block_map = get_block_map('some/path')
+                link('some/path')
         self.assertEqual('Found multiple blocks with name "foo" in some/path', str(cm.exception))
+
 
     def testIncludes_omitBlockName(self):
         mock_open = self.mock_open({
@@ -158,14 +154,14 @@ class GetBlockMapTest(unittest.TestCase):
             'path/to/docB.md': 'docB content',
         })
         with mock_open:
-            block_map = get_block_map('path/docA.md')
+            block, variables = link('path/docA.md')
 
-        self.assertEqual({
-            'all': self.join_lines(
-                'content',
-                'docB content',
-                'more content')
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_all = Block('path/docA.md', 'all', [self.join_lines(
+            'content',
+            'docB content',
+            'more content')])
+        self.assertBlockEqual(block_all, block)
 
     def testIncludes_withBlockName(self):
         mock_open = self.mock_open({
@@ -177,11 +173,11 @@ class GetBlockMapTest(unittest.TestCase):
                 '</block foo-bar>')
         })
         with mock_open:
-            block_map = get_block_map('docA.md')
+            block, variables = link('docA.md')
 
-        self.assertEqual({
-            'all': 'content in block',
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_all = Block('docA.md', 'all', ['content in block'])
+        self.assertBlockEqual(block_all, block)
 
     def testIncludes_stripWhiteSpaceInTag(self):
         mock_open = self.mock_open({
@@ -193,11 +189,11 @@ class GetBlockMapTest(unittest.TestCase):
                 '</block foo>')
         })
         with mock_open:
-            block_map = get_block_map('docA.md')
+            block, variables = link('docA.md')
 
-        self.assertEqual({
-            'all': 'content in block',
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_all = Block('docA.md', 'all', ['content in block'])
+        self.assertBlockEqual(block_all, block)
 
     def testIncludes_relativeToSource(self):
         mock_open = self.mock_open({
@@ -205,11 +201,11 @@ class GetBlockMapTest(unittest.TestCase):
             'path/to/docB.md': 'content',
         })
         with mock_open:
-            block_map = get_block_map('path/to/docA.md')
+            block, variables = link('path/to/docA.md')
 
-        self.assertEqual({
-            'all': 'content',
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_all = Block('path/to/docA.md', 'all', ['content'])
+        self.assertBlockEqual(block_all, block)
 
     def testIncludes_leadingWhitespace(self):
         mock_open = self.mock_open({
@@ -217,11 +213,11 @@ class GetBlockMapTest(unittest.TestCase):
             'docB.md': 'content',
         })
         with mock_open:
-            block_map = get_block_map('docA.md')
+            block, variables = link('docA.md')
 
-        self.assertEqual({
-            'all': '    content',
-        }, block_map.get_block_variables())
+        self.assertEqual({}, variables)
+        block_all = Block('docA.md', 'all', ['    content'])
+        self.assertBlockEqual(block_all, block)
 
     def testIncludes_preventNonExistentFile(self):
         mock_open = self.mock_open({
@@ -229,7 +225,7 @@ class GetBlockMapTest(unittest.TestCase):
         })
         with mock_open:
             with self.assertRaises(IncludeNonExistentBlock) as cm:
-                block_map = get_block_map('docA.md')
+                link('docA.md')
         self.assertEqual('docA.md tried to include a non-existent file: docB.md', str(cm.exception))
 
     def testIncludes_preventNonExistentBlock(self):
@@ -239,7 +235,7 @@ class GetBlockMapTest(unittest.TestCase):
         })
         with mock_open:
             with self.assertRaises(IncludeNonExistentBlock) as cm:
-                block_map = get_block_map('docA.md')
+                link('docA.md')
         self.assertEqual(
             'docA.md tried to include a non-existent block: docB.md:foo',
             str(cm.exception))
@@ -252,7 +248,7 @@ class GetBlockMapTest(unittest.TestCase):
         })
         with mock_open:
             with self.assertRaises(CyclicalIncludeError) as cm:
-                block_map = get_block_map('docA.md')
+                link('docA.md')
         self.assertEqual('docA.md -> docB.md -> docC.md -> docB.md', str(cm.exception))
 
     def testVariables_noIncludes(self):
@@ -262,23 +258,27 @@ class GetBlockMapTest(unittest.TestCase):
                 '~ author: bar')
         })
         with mock_open:
-            block_map = get_block_map('docA.md')
+            block, variables = link('docA.md')
 
         self.assertEqual({
             'title': 'foo',
             'author': 'bar',
-        }, block_map.get_variables())
+        }, variables)
+        block_all = Block('docA.md', 'all', [])
+        self.assertBlockEqual(block_all, block)
 
     def testVariables_handleWhitespace(self):
         mock_open = self.mock_open({
             'docA.md': '~     title   :     foo bar ',
         })
         with mock_open:
-            block_map = get_block_map('docA.md')
+            block, variables = link('docA.md')
 
         self.assertEqual({
             'title': 'foo bar',
-        }, block_map.get_variables())
+        }, variables)
+        block_all = Block('docA.md', 'all', [])
+        self.assertBlockEqual(block_all, block)
 
     def testVariables_variablesInAnyLocation(self):
         mock_open = self.mock_open({
@@ -289,17 +289,16 @@ class GetBlockMapTest(unittest.TestCase):
                 'More text')
         })
         with mock_open:
-            block_map = get_block_map('docA.md')
+            block, variables = link('docA.md')
 
         self.assertEqual({
             'title': 'foo',
             'author': 'bar',
-        }, block_map.get_variables())
-        self.assertEqual({
-            'all': self.join_lines(
-                'Some text',
-                'More text')
-        }, block_map.get_block_variables())
+        }, variables)
+        block_all = Block('docA.md', 'all', [self.join_lines(
+            'Some text',
+            'More text')])
+        self.assertBlockEqual(block_all, block)
 
     def testVariables_includeVariablesFromOtherFiles(self):
         mock_open = self.mock_open({
@@ -309,12 +308,14 @@ class GetBlockMapTest(unittest.TestCase):
             'docB.md': '~ author: bar '
         })
         with mock_open:
-            block_map = get_block_map('docA.md')
+            block, variables = link('docA.md')
 
         self.assertEqual({
             'title': 'foo',
             'author': 'bar',
-        }, block_map.get_variables())
+        }, variables)
+        block_all = Block('docA.md', 'all', [])
+        self.assertBlockEqual(block_all, block)
 
 
     #############
@@ -332,6 +333,18 @@ class GetBlockMapTest(unittest.TestCase):
         self.mock_is_file.side_effect = lambda f: f in file_map
         return mock.patch('builtins.open', mock.Mock(side_effect=side_effect))
 
+    def assertBlockEqual(self, expected, actual):
+        self.assertEqual(expected.source_path, actual.source_path)
+        self.assertEqual(expected.name, actual.name)
+        self.assertEqual(len(expected.segments), len(actual.segments))
+        for expected_segment, actual_segment in zip(expected.segments, actual.segments):
+            if isinstance(expected_segment, str):
+                self.assertEqual(expected_segment, actual_segment)
+            elif isinstance(expected_segment, Block):
+                self.assertBlockEqual(expected_segment, actual_segment)
+            else:
+                self.fail('Encountered segment of type "{}"'.format(expected_segment))
+
     def join_lines(self, *lines):
         """Concatenates multiple strings together with newlines in between.
 
@@ -339,3 +352,46 @@ class GetBlockMapTest(unittest.TestCase):
         indentation and leading/trailing newlines).
         """
         return '\n'.join(lines)
+
+class GetBlockDictTest(unittest.TestCase):
+    def testNoNestedBlocks(self):
+        block_all = Block('some/path', 'all', ['all content'])
+        block_dict = get_block_dict(block_all)
+        self.assertEqual({
+            'all': 'all content',
+        }, block_dict)
+
+    def testNestedBlocks(self):
+        block_inner = Block('some/path', 'inner', ['inner content'])
+        block_outer = Block('some/path', 'outer', [
+            'outer content',
+            block_inner,
+            'outer content'])
+        block_all = Block('some/path', 'all', [
+            'all content',
+            block_outer,
+            'all content'])
+
+        block_dict = get_block_dict(block_all)
+        self.assertEqual({
+            'all': self.join_lines(
+                'all content',
+                'outer content',
+                'inner content',
+                'outer content',
+                'all content'),
+            'outer': self.join_lines(
+                'outer content',
+                'inner content',
+                'outer content'),
+            'inner': 'inner content',
+        }, block_dict)
+
+    def join_lines(self, *lines):
+        """Concatenates multiple strings together with newlines in between.
+
+        Using this method is cleaner than using multiline strings (since we need to handle
+        indentation and leading/trailing newlines).
+        """
+        return '\n'.join(lines)
+

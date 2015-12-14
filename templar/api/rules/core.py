@@ -42,7 +42,7 @@ class Rule:
             return False
         return True
 
-    def apply(self, content, variables):
+    def apply(self, content):
         """Applies this rule to the given content. A rule can do one or more of the following:
 
         - Return a string; this is taken to be the transformed version of content, and will be used
@@ -68,7 +68,7 @@ class SubstitutionRule(Rule):
                 '{} must implement the substitute method to be '
                 'a valid SubstitutionRule'.format(type(self).__name__))
 
-    def apply(self, content, variables):
+    def apply(self, content):
         if isinstance(self.pattern, str):
             return re.sub(self.pattern, self.substitute, content)
         elif hasattr(self.pattern, 'sub') and callable(self.pattern.sub):
@@ -76,6 +76,29 @@ class SubstitutionRule(Rule):
         raise InvalidRule(
             "{}'s pattern has type '{}', but expected a string or "
             "compiled regex.".format(type(self).__name__, type(self.pattern).__name__))
+
+
+class VariableRule(Rule):
+    """An abstract class that represents a rule that constructs variables given the content. For
+    VariableRules, the apply method returns a dictionary mapping str -> str instead of returning
+    transformed content (a string).
+    """
+
+    def extract(self, content):
+        """A substitution function that returns the text with which to replace the given match.
+        Subclasses should implement this method.
+        """
+        raise InvalidRule(
+                '{} must implement the extract method to be '
+                'a valid VariableRule'.format(type(self).__name__))
+
+    def apply(self, content):
+        variables = self.extract(content)
+        if not isinstance(variables, dict):
+            raise InvalidRule(
+                "{} is a VariableRule, so its extract method should return a dict. Instead, it "
+                "returned type '{}'".format(type(self).__name__, type(variables).__name__))
+        return variables
 
 
 class InvalidRule(TemplarError):

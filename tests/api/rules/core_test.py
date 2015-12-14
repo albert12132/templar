@@ -35,7 +35,7 @@ class SubstitutionRuleTest(unittest.TestCase):
 
         rule = TestRule()
         with self.assertRaises(InvalidRule) as cm:
-            rule.apply('content', {})
+            rule.apply('content')
         self.assertEqual(
                 "TestRule's pattern has type 'int', but expected a string or compiled regex.",
                 str(cm.exception))
@@ -46,7 +46,7 @@ class SubstitutionRuleTest(unittest.TestCase):
 
         rule = TestRule()
         with self.assertRaises(InvalidRule) as cm:
-            rule.apply('content', {})
+            rule.apply('content')
         self.assertEqual(
                 'TestRule must implement the substitute method to be a valid SubstitutionRule',
                 str(cm.exception))
@@ -58,7 +58,7 @@ class SubstitutionRuleTest(unittest.TestCase):
                 return match.group(1).upper()
 
         rule = TestRule()
-        result = rule.apply('this is spot. see spot run.', {})
+        result = rule.apply('this is spot. see spot run.')
         self.assertEqual('THIS IS SPOT. SEE SPOT RUN.', result)
 
     def testWithProperRegexAndSubstitute_regexObject(self):
@@ -68,5 +68,5 @@ class SubstitutionRuleTest(unittest.TestCase):
                 return match.group(1).upper()
 
         rule = TestRule()
-        result = rule.apply('this is spot. see spot run.', {})
+        result = rule.apply('this is spot. see spot run.')
         self.assertEqual('THIS IS SPOT. SEE SPOT RUN.', result)

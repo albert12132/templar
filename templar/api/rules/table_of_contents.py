@@ -2,7 +2,7 @@ from templar.api.rules import core
 
 import re
 
-class HtmlTableOfContents(core.Rule):
+class HtmlTableOfContents(core.VariableRule):
     """A rule that constructs a table of contents based on all HTML headers found in the
     content.
 
@@ -28,11 +28,9 @@ class HtmlTableOfContents(core.Rule):
         super().__init__(src, dst)
 
 
-    def apply(self, content, variables):
+    def extract(self, content):
         matches = re.findall(self.header_regex, content)
-        variables['table_of_contents'] = '\n'.join(self._build_list(matches))
-        return content
-
+        return {'table_of_contents': '\n'.join(self._build_list(matches))}
 
     def _build_list(self, matches, current_level='1'):
         """Builds an unordered HTML list out of the list of matches, stopping at the first match

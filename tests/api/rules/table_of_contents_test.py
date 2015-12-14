@@ -95,10 +95,10 @@ class HtmlTableOfContentsTest(unittest.TestCase):
                 '</ul>'))
 
     def verifyApply(self, contents, expect):
-        self.rule.apply(contents, self.variables)
+        variables = self.rule.apply(contents)
         self.assertEqual({
             'table_of_contents': expect,
-        }, self.variables)
+        }, variables)
 
     def join_lines(self, *lines):
         return '\n'.join(lines)

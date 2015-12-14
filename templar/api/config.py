@@ -19,6 +19,7 @@ class ConfigBuilder(object):
     - template_dirs
     - variables
     - preprocess_rules
+    - compiler_rules
     - postprocess_rules
 
     Example usage:
