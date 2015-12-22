@@ -1,13 +1,15 @@
 Templar
 =======
 
+[![Build Status](https://travis-ci.org/albert12132/templar.svg?branch=master)](https://travis-ci.org/albert12132/templar)
+
 Templar is a static templating engine written in Python that is
 designed to be lightweight and flexible. Templar supports template
 inheritance and modular source files, as well as the ability to define
 custom Markdown patterns.
 
 See the [Templar
-Wiki](https://github.com/albert12132/templar/wiki/Getting-started)
+Wiki](https://github.com/albert12132/templar/wiki/)
 for help with getting started.
 
 Contributing
