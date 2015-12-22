@@ -3,6 +3,7 @@
 from templar.api import config
 from templar.api import publish
 from templar.exceptions import TemplarError
+import templar
 
 import argparse
 import logging
@@ -27,11 +28,17 @@ def flags(args=None):
                         'even if --destination is specified')
     parser.add_argument('--debug', action='store_true',
                         help='Enable debugging messages.')
+    parser.add_argument('--version', action='store_true',
+                        help='Print the version number and exit')
     if args is not None:
         return parser.parse_args(args)
     return parser.parse_args()
 
 def run(args):
+    if args.version:
+        print('Templar version {}'.format(templar.__version__))
+        exit(0)
+
     log.setLevel(logging.DEBUG if args.debug else logging.ERROR)
 
     try:
