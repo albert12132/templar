@@ -1,6 +1,7 @@
 Templar
 =======
 
+[![PyPI version](https://badge.fury.io/py/templar.svg)](https://badge.fury.io/py/templar)
 [![Build Status](https://travis-ci.org/albert12132/templar.svg?branch=master)](https://travis-ci.org/albert12132/templar)
 
 Templar is a static templating engine written in Python that is
