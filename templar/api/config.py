@@ -35,11 +35,13 @@ class ConfigBuilder(object):
     def __init__(self,
             template_dirs=None,
             variables=None,
+            recursively_evaluate_jinja_expressions=False,
             compiler_rules=None,
             preprocess_rules=None,
             postprocess_rules=None):
         self._template_dirs = list(template_dirs) if template_dirs else []
         self._variables = variables.copy() if variables else {}
+        self._recursively_evaluate_jinja_expressions = recursively_evaluate_jinja_expressions
         self._compiler_rules = list(compiler_rules) if compiler_rules else []
         self._preprocess_rules = list(preprocess_rules) if preprocess_rules else []
         self._postprocess_rules = list(postprocess_rules) if postprocess_rules else []
@@ -70,6 +72,14 @@ class ConfigBuilder(object):
         # Loop through variables instead of using dict.update so we can validate each variable.
         for variable, value in variable_map.items():
             self.add_variable(variable, value)
+        return self
+
+    def set_recursively_evaluate_jinja_expressions(self, recursively_evaluate_jinja_expressions):
+        if not isinstance(recursively_evaluate_jinja_expressions, bool):
+            raise ConfigBuilderError(
+                    'recursively_evaluate_jinja_expressions must be a boolean, '
+                    'but instead was: ' + repr(recursively_evaluate_jinja_expressions))
+        self._recursively_evaluate_jinja_expressions = recursively_evaluate_jinja_expressions
         return self
 
     def clear_variables(self):
@@ -140,6 +150,7 @@ class ConfigBuilder(object):
         return Config(
                 self._template_dirs,
                 self._variables,
+                self._recursively_evaluate_jinja_expressions,
                 self._compiler_rules,
                 self._preprocess_rules,
                 self._postprocess_rules)
@@ -153,11 +164,13 @@ class Config(object):
     def __init__(self,
             template_dirs,
             variables,
+            recursively_evaluate_jinja_expressions,
             compiler_rules,
             preprocess_rules,
             postprocess_rules):
         self._template_dirs = template_dirs
         self._variables = variables
+        self._recursively_evaluate_jinja_expressions = recursively_evaluate_jinja_expressions
         self._compiler_rules = compiler_rules
         self._preprocess_rules = preprocess_rules
         self._postprocess_rules = postprocess_rules
@@ -169,6 +182,10 @@ class Config(object):
     @property
     def variables(self):
         return self._variables.copy()
+
+    @property
+    def recursively_evaluate_jinja_expressions(self):
+        return self._recursively_evaluate_jinja_expressions
 
     @property
     def compiler_rules(self):
@@ -190,6 +207,7 @@ class Config(object):
         return ConfigBuilder(
                 self._template_dirs,
                 self._variables,
+                self._recursively_evaluate_jinja_expressions,
                 self._compiler_rules,
                 self._preprocess_rules,
                 self._postprocess_rules)

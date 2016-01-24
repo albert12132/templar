@@ -67,6 +67,23 @@ class ConfigBuilderTest(unittest.TestCase):
             })
         self.assertEqual('variable must be a string, but instead was: 4', str(cm.exception))
 
+    def testRecursiveEvaluateJinjaExpressions(self):
+        builder = ConfigBuilder()
+        # Default should be False.
+        self.assertFalse(builder.build().recursively_evaluate_jinja_expressions)
+
+        builder.set_recursively_evaluate_jinja_expressions(True)
+        self.assertTrue(builder.build().recursively_evaluate_jinja_expressions)
+
+    def testTemplateDirs_preventNonBooleans(self):
+        with self.assertRaises(ConfigBuilderError) as cm:
+            ConfigBuilder().set_recursively_evaluate_jinja_expressions(4)
+        self.assertEqual(
+                'recursively_evaluate_jinja_expressions must be a boolean, '
+                'but instead was: 4',
+                str(cm.exception))
+
+
     def testCompilerRules(self):
         rule1, rule2 = Rule(), Rule()
         builder = ConfigBuilder().append_compiler_rules(rule1, rule2)

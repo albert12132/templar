@@ -13,6 +13,7 @@ from templar.exceptions import TemplarError
 
 import jinja2
 import os
+import re
 
 def publish(config, source=None, template=None, destination=None, jinja_env=None, no_write=False):
     """Given a config, performs an end-to-end publishing pipeline and returns the result:
@@ -74,6 +75,21 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
             jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(config.template_dirs))
         jinja_template = jinja_env.get_template(template)
         result = jinja_template.render(variables)
+
+        # Handle recursive evaluation of Jinja expressions.
+        iterations = 0
+        while config.recursively_evaluate_jinja_expressions \
+                and iterations < _MAX_JINJA_RECURSIVE_DEPTH + 1 \
+                and  _jinja_expression_re.search(result):
+            if iterations == _MAX_JINJA_RECURSIVE_DEPTH:
+                raise PublishError('\n'.join([
+                    'Recursive Jinja expression evaluation exceeded the allowed '
+                        'number of iterations. Last state of template:',
+                    result]))
+            jinja_env = jinja2.Environment(loader=jinja2.DictLoader({'intermediate': result}))
+            jinja_template = jinja_env.get_template('intermediate')
+            result = jinja_template.render(variables)
+            iterations += 1
     else:
         # template is None implies source is not None, so variables['blocks'] must exist.
         result = variables['blocks']['all']
@@ -90,3 +106,6 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
 
 class PublishError(TemplarError):
     pass
+
+_jinja_expression_re = re.compile(r'\{\{.*\}\}')
+_MAX_JINJA_RECURSIVE_DEPTH = 10

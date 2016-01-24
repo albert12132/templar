@@ -126,7 +126,6 @@ class PublishTest(unittest.TestCase):
                 'segment 3: outer content'),
             result)
 
-
     def testSourceAndTemplate(self):
         file_map = {
             'docA.md': self.join_lines(
@@ -171,6 +170,64 @@ class PublishTest(unittest.TestCase):
                     'val',
                     '</p>'),
                 result)
+
+    def testRecursivelyEvaluateJinjaExpressions(self):
+        file_map = {
+            'docA.md': self.join_lines(
+                '~ title: test',    # Creates a variable called 'title'
+                '{{ title|capitalize }}'),
+        }
+        template_loader = jinja2.DictLoader({
+            'some/path': '{{ blocks["all"] }}',   # Use the block defined in the content.
+        })
+        jinja_env = jinja2.Environment(loader=template_loader)
+
+        # By default, should not recursively evaluate Jinja expressions.
+        with self.mock_open(file_map):
+            result = publish(
+                    ConfigBuilder().build(),
+                    source='docA.md',
+                    template='some/path',
+                    jinja_env=jinja_env,
+                    no_write=True)
+        self.assertEquals('{{ title|capitalize }}', result)
+
+        # Set recursively_evaluate_jinja_expressions to True.
+        config = ConfigBuilder().set_recursively_evaluate_jinja_expressions(True).build()
+        with self.mock_open(file_map):
+            result = publish(
+                    config,
+                    source='docA.md',
+                    template='some/path',
+                    jinja_env=jinja_env,
+                    no_write=True)
+        self.assertEquals('Test', result)
+
+    def testRecursivelyEvaluateJinjaExpressions_preventInfiniteLoop(self):
+        file_map = {
+            'docA.md': '{{ blocks["all"] }}',   # Refers to itself.
+        }
+        template_loader = jinja2.DictLoader({
+            'some/path': '{{ blocks["all"] }}',   # Use the block defined in the content.
+        })
+        jinja_env = jinja2.Environment(loader=template_loader)
+
+        # Set recursively_evaluate_jinja_expressions to True.
+        config = ConfigBuilder().set_recursively_evaluate_jinja_expressions(True).build()
+        with self.assertRaises(PublishError) as cm:
+            with self.mock_open(file_map):
+                result = publish(
+                        config,
+                        source='docA.md',
+                        template='some/path',
+                        jinja_env=jinja_env,
+                        no_write=True)
+        self.assertEquals(
+                self.join_lines(
+                    'Recursive Jinja expression evaluation exceeded the allowed number of '
+                        'iterations. Last state of template:',
+                    '{{ blocks["all"] }}')
+                , str(cm.exception))
 
     def testWrite(self):
         template_loader = jinja2.DictLoader({
