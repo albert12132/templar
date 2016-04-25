@@ -144,6 +144,15 @@ class LinkTest(unittest.TestCase):
                 link('some/path')
         self.assertEqual('Found multiple blocks with name "foo" in some/path', str(cm.exception))
 
+    def testBlocks_catchMissingClosingBlock(self):
+        data = self.join_lines(
+        '<block foo>',
+        'content')
+        with self.mock_open({'some/path': data}):
+            with self.assertRaises(InvalidBlockName) as cm:
+                link('some/path')
+        self.assertEqual('Expected closing block called "foo" in some/path', str(cm.exception))
+
 
     def testIncludes_omitBlockName(self):
         mock_open = self.mock_open({

@@ -126,6 +126,37 @@ class PublishTest(unittest.TestCase):
                 'segment 3: outer content'),
             result)
 
+    def testOnlySource_preserveNewlinesOutsideOfBlocks(self):
+        file_map = {
+            'docA.md':
+"""<block zero>
+zero
+</block zero>
+<block one>
+one
+</block one>
+
+<block two>
+two
+</block two>
+
+
+<block three>
+three
+</block three>"""
+        }
+        with self.mock_open(file_map):
+            result = publish(ConfigBuilder().build(), source='docA.md', no_write=True)
+        self.assertEquals(
+"""zero
+one
+
+two
+
+
+three""",
+            result)
+
     def testSourceAndTemplate(self):
         file_map = {
             'docA.md': self.join_lines(

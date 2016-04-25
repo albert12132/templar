@@ -14,7 +14,8 @@ def link(source_path):
     with open(source_path, 'r') as f:
         content = f.read()
     block_map = BlockMap()  # The map will be populated with the following function call.
-    all_block = convert_string_to_block(content, block_map, LinkStack(source_path), source_path)
+    all_block = convert_lines_to_block(
+            content.splitlines(), block_map, LinkStack(source_path), source_path)
     return all_block, block_map.get_variables()
 
 
@@ -104,29 +105,46 @@ class LinkStack(object):
         self._stack.pop()
 
 
-block_regex = re.compile(r"""
-    (?:\n|\A)[^\n]*?      # strip out extra leading characters
-    <\s*
-        block\s+([\w -]+) # \1 is the block name. Matches alphanumerics, hyphen, and space
-    \s*>
-    .*?\n                 # strip out extra ending characters
-    (.*?)                 # \2 is block contents
-    \n?[^\n]*             # strip out extra leading characters
-    </\s*                 # forward slash to denote closing tag
-        block\s+\1
-    \s*>
-    [^\n]*                # strip out extra ending characters
-""", re.S | re.X)
+ALL_BLOCK_NAME = 'all'
 
-def convert_string_to_block(content, block_map, link_stack, source_path, block_name='all'):
-    """Converts the specified block content (string) into a Block object.
+BLOCK_OPEN_REGEX = re.compile("""
+^.*?<\s*block\s+
+([\w -]+)           # \1 is the block name
+\s*>.*$
+""", re.X)
+
+BLOCK_CLOSE_REGEX = re.compile("""
+^.*?<\s*/\s*block\s+
+([\w -]+)           # \1 is the block name
+\s*>.*$
+""", re.X)
+
+INCLUDE_REGEX = re.compile(r"""
+^([ \t]*)       # \1 is leading whitespace
+<\s*include\s+
+    (.+?)       # \2 is filename
+    (:.+?)?     # \3 is (optional) block name with leading colon
+\s*>.*$
+""", re.X)
+
+VARIABLE_REGEX = re.compile(r"""
+^~\s*        # Begins with ~
+(.+?)        # \1 is variable name
+\s*:\s*      # Colon delimiter
+(.+?)        # \2 is value
+\s*(?:\n|\Z) # Remove trailing newline.
+""", re.X)
+
+
+def convert_lines_to_block(lines, block_map, link_stack, source_path, block_name=ALL_BLOCK_NAME):
+    """Converts the specified block content lines (list of strings) into a Block object.
 
     Nested blocks are recursively converted into strings and cached in the block_map. Include tags
     are processed as well. The resulting block string is also added to the block_map, along with any
     nested blocks.
 
     PARAMETERS:
-    content     -- str; content to be converted into a Block.
+    lines       -- str; content lines to be converted into a Block.
     block_map   -- BlockMap
     link_stack  -- LinkStack
     source_path -- str; the path of the file from which this content came, relative to the current
@@ -137,56 +155,81 @@ def convert_string_to_block(content, block_map, link_stack, source_path, block_n
     RETURNS:
     Block; the result of converting the block content.
     """
+    found_closing_block = False
     segments = []
-    inner_block_name = None
-    for i, match in enumerate(block_regex.split(content)):
-        if i % 3 == 0:
-            # Non-block text. Process for links and add to segments. Omit empty matches.
-            # Strip leading newline, which is not removed by the block_regex.
-            if i > 0 and match.startswith('\n'):
-                match = match[1:]
+    while lines:
+        line = lines.pop(0)
 
-            processed = process_links(match, block_map, link_stack, source_path)
-            if processed != '':
-                segments.append(processed)
-        elif i % 3 == 1:
-            # Block name.
-            if match == 'all':
-                raise InvalidBlockName('"all" is a reserved block name, '
-                    'but found block named "all" in ' + source_path)
-            inner_block_name = match
-        elif i % 3 == 2:
-            # Block contents. Recursively convert contents to a Block.
-            inner_block = convert_string_to_block(
-                match,
+        # Check if the line is a closing tag. This should only occur if we encounter the closing
+        # block tag that matches the block_name parameter.
+        close_tag_match = BLOCK_CLOSE_REGEX.match(line)
+        if close_tag_match:
+            if close_tag_match.group(1) != block_name:
+                raise InvalidBlockName('Expected closing block ' + block_name + \
+                    'but found block named "' + block_tag_match.group(1) + '" in ' + source_path)
+            # If the block name is valid, we are done processing this block.
+            found_closing_block = True
+            break
+
+        # Otherwise, check if the line is a nested block.
+        open_tag_match = BLOCK_OPEN_REGEX.match(line)
+        if open_tag_match:
+            # Make sure the block name is not the reserved ALL_BLOCK_NAME.
+            inner_block_name = open_tag_match.group(1)
+            if inner_block_name == ALL_BLOCK_NAME:
+                raise InvalidBlockName(
+                    '"{0}" is a reserved block name, but found block named "{0}" in {1}'.format(
+                        ALL_BLOCK_NAME, source_path))
+
+            # Recursively convert nested block contents to a Block.
+            inner_block = convert_lines_to_block(
+                lines,
                 block_map,
                 link_stack,
                 source_path,
                 inner_block_name)
             segments.append(inner_block)
+            continue
+
+        # Otherwise, check if the line is a variable. The line should be omitted.
+        variable_match = VARIABLE_REGEX.match(line)
+        if variable_match:
+            process_variable(variable_match, block_map)
+            continue
+
+        # Otherwise, check if the line is an include tag.
+        include_match = INCLUDE_REGEX.match(line)
+        if include_match:
+            included_content = process_links(include_match, block_map, link_stack, source_path)
+            # Omit empty content.
+            if included_content != '':
+                append_text_to_segments(segments, included_content)
+        else:
+            append_text_to_segments(segments, line)
+
+    if block_name != ALL_BLOCK_NAME and not found_closing_block:
+        raise InvalidBlockName(
+                'Expected closing block called "{0}" in {1}'.format(block_name, source_path))
 
     block = Block(source_path, block_name, segments)
     block_map.add_block(block)
     return block
 
 
-include_regex = re.compile(r"""
-    ^([ \t]*)        # \1 is leading whitespace
-    <\s*include\s+
-        (.+?)       # \2 is filename
-        (:.+?)?     # \3 is (optional) block name with leading colon
-    \s*>.*$
-""", re.M | re.X)
+def append_text_to_segments(segments, text):
+    if segments and not isinstance(segments[-1], Block):
+        segments[-1] = segments[-1] + '\n' + text
+    else:
+        segments.append(text)
 
-variable_regex = re.compile(r"""
-    ^~\s*        # Begins with ~
-    (.+?)        # \1 is variable name
-    \s*:\s*      # Colon delimiter
-    (.+?)        # \2 is value
-    \s*(?:\n|\Z) # Remove trailing newline.
-""", re.X | re.M)
 
-def process_links(content, block_map, link_stack, source_path):
+def process_variable(variable_match, block_map):
+    variable = variable_match.group(1)
+    value = variable_match.group(2)
+    block_map.add_variable(variable, value)
+
+
+def process_links(include_match, block_map, link_stack, source_path):
     """Process a string of content for include tags.
 
     This function assumes there are no blocks in the content. The content is split into segments,
@@ -201,34 +244,23 @@ def process_links(content, block_map, link_stack, source_path):
     RETURNS:
     list of str; segments that the comprise the content.
     """
-    segments = []
-    leading_whitespace = None
-    include_path = None
-    for i, match in enumerate(include_regex.split(content)):
-        if i % 4 == 0 and match != '':
-            # Regular text. Omit empty matches. Process for variables.
-            for variable, value in variable_regex.findall(content):
-                block_map.add_variable(variable, value)
-            stripped_of_variables = variable_regex.sub('', match)
-            segments.append(stripped_of_variables)
-        elif i % 4 == 1:
-            # Leading whitespace
-            leading_whitespace = match
-        elif i % 4 == 2:
-            # Include path.
-            include_path = match
-        elif i % 4 == 3:
-            # Optional block name. If match is None, block name was ommitted (default to 'all').
-            block_name = match.lstrip(':') if match is not None else 'all'
-            block = retrieve_block_from_map(
-                    source_path,
-                    include_path.strip(),
-                    block_name.strip(),
-                    leading_whitespace,
-                    block_map,
-                    link_stack)
-            segments.append(block)
-    return ''.join(segments)
+    leading_whitespace = include_match.group(1)
+    include_path = include_match.group(2)
+
+    # Optional block name. If match is None, block name was ommitted (default to 'all').
+    block_name = include_match.group(3)
+    if block_name is not None:
+        block_name = block_name.lstrip(':')
+    else:
+        block_name = ALL_BLOCK_NAME
+
+    return retrieve_block_from_map(
+            source_path,
+            include_path.strip(),
+            block_name.strip(),
+            leading_whitespace,
+            block_map,
+            link_stack)
 
 
 def retrieve_block_from_map(
@@ -266,7 +298,7 @@ def retrieve_block_from_map(
     if not block_map.has_block(filename, block_name):
         with open(filename, 'r') as f:
             content = f.read()
-        convert_string_to_block(content, block_map, link_stack, filename)
+        convert_lines_to_block(content.splitlines(), block_map, link_stack, filename)
 
     # If the block is not in the map even after converting, then the block doesn't exist.
     if not block_map.has_block(filename, block_name):
@@ -301,3 +333,4 @@ class CyclicalIncludeError(TemplarError):
 class SourceNotFound(TemplarError):
     def __init__(self, source_path):
         super().__init__('Could not find source file: ' + source_path)
+
