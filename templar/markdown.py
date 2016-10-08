@@ -853,22 +853,11 @@ def paragraph_sub(match):
 
 def postprocess(text, markdown_obj, footnotes=False):
     text = slug_re.sub(slug_sub, text)
-    text = re_em_dash.sub(em_dash_sub, text)
     text = re.sub(r'^[ \t]+$', '', text, flags=re.M)
     text = text.strip()
     if footnotes:
         text += generate_footnotes(markdown_obj)
     return text
-
-re_em_dash = re.compile(r"""
-(?<=[^-])   # should not have preceding hyphens
-(?<!<!)     # should not be an HTML comment
---
-(?=[^-])    # should not have trailing hyphens
-(?!>)       # should not be an HTML comment
-""", re.X | re.S)
-def em_dash_sub(match):
-    return '&mdash;'
 
 slug_re = re.compile(r"""
     <

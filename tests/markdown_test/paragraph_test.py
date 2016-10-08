@@ -176,7 +176,7 @@ class HorizontalRuleTest(MarkdownTest):
         expect = """
         <p>paragraph here</p>
 
-        <p>&mdash;</p>
+        <p>--</p>
 
         <p>Horizontal rule above</p>
         """
@@ -199,59 +199,12 @@ class HorizontalRuleTest(MarkdownTest):
         self.assertMarkdownNotEqual(text, expect)
 
 class MiscellaneousTest(MarkdownTest):
-    def testEmDash(self):
+    def testDoubleDashInLinkIsPreserved(self):
         text = """
-        This is an example -- of an em dash
+        This is [a link](http://example.com/id--tag)
         """
         expect = """
-        <p>This is an example &mdash; of an em dash</p>
-        """
-        self.assertMarkdown(text, expect)
-
-    def testEmDashNoWhitespace(self):
-        text = """
-        This is an example--of an em dash
-        """
-        expect = """
-        <p>This is an example&mdash;of an em dash</p>
-        """
-        self.assertMarkdown(text, expect)
-
-    def testNotAnEmDash(self):
-        text = """
-        This is not an em dash
-        --
-        """
-        expect = """
-        <h2 id="this-is-not-an-em-dash">This is not an em dash</h2>
-        """
-        self.assertMarkdown(text, expect)
-
-        text = """
-        This is not --- an em dash
-        """
-        expect = """
-        <p>This is not --- an em dash</p>
-        """
-        self.assertMarkdown(text, expect)
-
-    def testEmDashCode(self):
-        text = """
-        This is `-- is not --` an emdash
-        """
-        expect = """
-        <p>This is <code>&#x2d;&#x2d; is not &#x2d;&#x2d;</code> an emdash</p>
-        """
-        self.assertMarkdown(text, expect)
-
-        text = """
-        stuff
-            This is not an --emdash
-        """
-        expect = """
-        <p>stuff</p>
-
-        <pre><code>This is not an &#x2d;&#x2d;emdash</code></pre>
+        <p>This is <a href="http://example.com/id--tag">a link</a></p>
         """
         self.assertMarkdown(text, expect)
 
