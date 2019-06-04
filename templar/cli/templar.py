@@ -34,6 +34,8 @@ def flags(args=None):
         return parser.parse_args(args)
     return parser.parse_args()
 
+parsed_args = None
+
 def run(args):
     if args.version:
         print('Templar version {}'.format(templar.__version__))
@@ -41,7 +43,10 @@ def run(args):
 
     log.setLevel(logging.DEBUG if args.debug else logging.ERROR)
 
+    global parsed_args
+    old_parsed_args = parsed_args
     try:
+        parsed_args = args
         configuration = config.import_config(args.config)
         result = publish.publish(
                 configuration,
@@ -58,6 +63,8 @@ def run(args):
     else:
         if not args.destination or args.print:
             print(result)
+    finally:
+        parsed_args = old_parsed_args
 
 def main():
     run(flags())
