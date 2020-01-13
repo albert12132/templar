@@ -1,5 +1,3 @@
-from textwrap import dedent
-
 from tests.markdown_test.test_utils import MarkdownTest
 
 class CodeblockTest(MarkdownTest):
@@ -246,7 +244,6 @@ class CodeblockTest(MarkdownTest):
         Codeblock here
         ```
         """
-        text = dedent(text)
         expect = """
         <p>Stuff</p>
 
@@ -268,7 +265,6 @@ class CodeblockTest(MarkdownTest):
         Codeblock here 2
         ```
         """
-        text = dedent(text)
         expect = """
         <p>Stuff</p>
 
@@ -287,7 +283,6 @@ class CodeblockTest(MarkdownTest):
         Codeblock here 2
         ```
         """
-        text = dedent(text)
         expect = """
         <p>Stuff</p>
 
