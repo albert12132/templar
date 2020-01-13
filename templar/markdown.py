@@ -370,8 +370,9 @@ def hash_lists(text, hashes, markdown_obj):
     return text
 
 re_codeblock = re.compile(r"""
-(?:\n+|\A)    # newline or start of string
-(                       # \1 is entire codeblock
+(?P<language>)          # no language for these indented code blocks
+(?:\n+|\A)              # newline or start of string
+(?P<code>               # \1 is entire codeblock
     (?:
         [ ]{4}          # at least four spaces
         .+?             # contents of line
@@ -379,6 +380,14 @@ re_codeblock = re.compile(r"""
     )+
 )
 """, re.S | re.X)
+re_codeblock_backticks = re.compile(r"""
+(?:\n+|\A)
+```(?P<language>.*)\n
+    (?P<code>
+        ((?!```).*(\n|\Z))*
+    )
+```
+""", re.X | re.M)
 def hash_codeblocks(text, hashes):
     """Hashes codeblocks (<pre> elements).
 
@@ -398,14 +407,17 @@ def hash_codeblocks(text, hashes):
     to accomodate (and even look) for this type of conversion.
     """
     def sub(match):
-        block = match.group(1).rstrip('\n')
+        block = match.group("code").rstrip('\n')
+        language = match.group("language")
         block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
         block = escape(block)
-        block = '<pre><code>{}</code></pre>'.format(block)
+        block = '<pre><code{}>{}</code></pre>'.format(' class="{}"'.format(language) if language else "", block)
         hashed = hash_text(block, 'pre')
         hashes[hashed] = block
         return '\n\n' + hashed + '\n\n'
-    return re_codeblock.sub(sub, text)
+    text = re_codeblock.sub(sub, text)
+    text = re_codeblock_backticks.sub(sub, text)
+    return text
 
 re_blockquote = re.compile(r"""
 (?:\n+|\A)                      # newline or start of string
