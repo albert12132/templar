@@ -232,3 +232,61 @@ class CodeblockTest(MarkdownTest):
         <pre><code>Codeblock here</code></pre>
         """
         self.assertMarkdownIgnoreWS(text, expect)
+
+    def testBackticks(self):
+        text = """
+        Stuff
+        ```
+        Codeblock here
+        ```
+        Not in codeblock
+        ```
+        Codeblock here
+        ```
+        """
+        expect = """
+        <p>Stuff</p>
+
+        <pre><code>Codeblock here</code></pre>
+
+        <p>Not in codeblock</p>
+
+        <pre><code>Codeblock here</code></pre>
+        """
+        self.assertMarkdownIgnoreWS(text, expect)
+
+    def testConsecutiveBackticks(self):
+        text = """
+        Stuff
+        ```
+        Codeblock here
+        ```
+        ```
+        Codeblock here 2
+        ```
+        """
+        expect = """
+        <p>Stuff</p>
+
+        <pre><code>Codeblock here</code></pre>
+        <pre><code>Codeblock here 2</code></pre>
+        """
+        self.assertMarkdownIgnoreWS(text, expect)
+
+    def testLanguageBackticks(self):
+        text = """
+        Stuff
+        ```python
+        Codeblock here
+        ```
+        ```scheme
+        Codeblock here 2
+        ```
+        """
+        expect = """
+        <p>Stuff</p>
+
+        <pre><code class="python">Codeblock here</code></pre>
+        <pre><code class="scheme">Codeblock here 2</code></pre>
+        """
+        self.assertMarkdownIgnoreWS(text, expect)
