@@ -217,6 +217,7 @@ class CodeblockTest(MarkdownTest):
         Stuff
 
             Codeblock here
+                Indented
 
         Not in codeblock
 
@@ -225,7 +226,8 @@ class CodeblockTest(MarkdownTest):
         expect = """
         <p>Stuff</p>
 
-        <pre><code>Codeblock here</code></pre>
+        <pre><code>Codeblock here
+            Indented</code></pre>
 
         <p>Not in codeblock</p>
 
@@ -238,6 +240,7 @@ class CodeblockTest(MarkdownTest):
         Stuff
         ```
         Codeblock here
+            Indented
         ```
         Not in codeblock
         ```
@@ -247,7 +250,8 @@ class CodeblockTest(MarkdownTest):
         expect = """
         <p>Stuff</p>
 
-        <pre><code>Codeblock here</code></pre>
+        <pre><code>Codeblock here
+            Indented</code></pre>
 
         <p>Not in codeblock</p>
 
