@@ -2,6 +2,7 @@ import argparse
 import html
 import os
 import re
+import functools
 from collections import OrderedDict
 from hashlib import sha1
 from random import randint
@@ -406,17 +407,18 @@ def hash_codeblocks(text, hashes):
     Certain highlighting packages (like highlight.js) are designed
     to accomodate (and even look) for this type of conversion.
     """
-    def sub(match):
+    def sub(match, dedent):
         block = match.group("code").rstrip('\n')
         language = match.group("language")
-        block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
+        if dedent:
+            block = re.sub(r'(?:(?<=\n)|(?<=\A)) {4}', '', block)
         block = escape(block)
         block = '<pre><code{}>{}</code></pre>'.format(' class="{}"'.format(language) if language else "", block)
         hashed = hash_text(block, 'pre')
         hashes[hashed] = block
         return '\n\n' + hashed + '\n\n'
-    text = re_codeblock.sub(sub, text)
-    text = re_codeblock_backticks.sub(sub, text)
+    text = re_codeblock_backticks.sub(functools.partial(sub, dedent=False), text)
+    text = re_codeblock.sub(functools.partial(sub, dedent=True), text)
     return text
 
 re_blockquote = re.compile(r"""
