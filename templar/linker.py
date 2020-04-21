@@ -13,6 +13,10 @@ def link(source_path):
         raise SourceNotFound(source_path)
     with open(source_path, 'r') as f:
         content = f.read()
+
+    return link_content(content, source_path)
+
+def link_content(content, source_path='<input>'):
     block_map = BlockMap()  # The map will be populated with the following function call.
     all_block = convert_lines_to_block(
             content.splitlines(), block_map, LinkStack(source_path), source_path)
