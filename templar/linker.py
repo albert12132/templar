@@ -47,14 +47,14 @@ class Block(object):
         self.segments = segments
         self._str = None  # Cache the str representation of this block.
 
-    def apply_rule(self, rule):
+    def apply_rule(self, rule, destination=None):
         self._str = None  # Clear str cache.
         for i, segment in enumerate(self.segments):
             assert isinstance(segment, str) or isinstance(segment, Block)
             if isinstance(segment, str):
-                self.segments[i] = rule.apply(segment)
+                self.segments[i] = rule.apply_with_destination(segment, destination)
             else:
-                segment.apply_rule(rule)  # Recursively apply rule onto nested blocks.
+                segment.apply_rule(rule, destination)  # Recursively apply rule onto nested blocks.
 
     def __str__(self):
         if self._str is None:
