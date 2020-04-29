@@ -42,12 +42,11 @@ class Rule:
             return False
         return True
 
-    def apply_with_destination(self, content, destination):
+    def apply_with_destination(self, content, _destination):
         """Applies this rule to the given content, and provide a destination path.
 
         See apply for more information
         """
-        del destination
         return self.apply(content)
 
     def apply(self, content):
