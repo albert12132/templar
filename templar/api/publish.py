@@ -63,9 +63,9 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
         for rule in config.rules:
             if rule.applies(source, destination):
                 if isinstance(rule, VariableRule):
-                    variables.update(rule.apply(str(all_block)))
+                    variables.update(rule.apply_with_destination(str(all_block), destination))
                 else:
-                    all_block.apply_rule(rule)
+                    all_block.apply_rule(rule, destination=destination)
         block_variables.update(linker.get_block_dict(all_block))
         variables['blocks'] = block_variables   # Blocks are namespaced with 'blocks'.
 

@@ -42,6 +42,13 @@ class Rule:
             return False
         return True
 
+    def apply_with_destination(self, content, _destination):
+        """Applies this rule to the given content, and provide a destination path.
+
+        See apply for more information
+        """
+        return self.apply(content)
+
     def apply(self, content):
         """Applies this rule to the given content. A rule can do one or more of the following:
 
@@ -50,7 +57,7 @@ class Rule:
         - Modify variables (a dict). Usually, Rules that modify this dictionary will add new
           variables. However, a Rule can also delete or update key/value pairs in the dictionary.
         """
-        raise NotImplementedError
+        return self.apply_with_destination(content, None)
 
 
 class SubstitutionRule(Rule):
