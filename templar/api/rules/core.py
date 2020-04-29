@@ -59,6 +59,18 @@ class Rule:
         """
         return self.apply_with_destination(content, None)
 
+    @classmethod
+    def is_global(cls):
+        """
+        Returns whether this rule should be applied globally.
+
+        If you return true rather than the rule being applied per segment it is applied globally
+
+        Note that this removes the separation between segments so ideally this should only be used in a postprocessing
+            rule
+        """
+        return False
+
 
 class SubstitutionRule(Rule):
     """An abstract class that represents a rule that transforms the content that is being processed,
