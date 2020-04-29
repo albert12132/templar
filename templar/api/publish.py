@@ -7,6 +7,7 @@ Users can use this module with the following import statement:
 """
 
 from templar import linker
+from templar.linker import Block
 from templar.api.config import Config
 from templar.api.rules.core import VariableRule
 from templar.exceptions import TemplarError
@@ -64,6 +65,9 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
             if rule.applies(source, destination):
                 if isinstance(rule, VariableRule):
                     variables.update(rule.apply_with_destination(str(all_block), destination))
+                elif rule.is_global():
+                    result_content = rule.apply_with_destination(str(all_block), destination=destination)
+                    all_block = Block(all_block.source_path, all_block.name, [result_content])
                 else:
                     all_block.apply_rule(rule, destination=destination)
         block_variables.update(linker.get_block_dict(all_block))
