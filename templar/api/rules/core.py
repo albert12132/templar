@@ -67,7 +67,7 @@ class Rule:
         If you return true rather than the rule being applied per segment it is applied globally
 
         Note that this removes the separation between segments so ideally this should only be used in a postprocessing
-            rule
+            rule for code that does not interact with templates since it flattens out the blocks.
         """
         return False
 
