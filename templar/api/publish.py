@@ -102,7 +102,10 @@ def publish(config, source=None, template=None, destination=None, jinja_env=None
     if not no_write and destination:
         destination_dir = os.path.dirname(destination)
         if destination_dir != '' and not os.path.isdir(destination_dir):
-            os.makedirs(destination_dir)
+            try:
+                os.makedirs(destination_dir)
+            except FileExistsError:
+                pass
         with open(destination, 'w') as f:
             f.write(result)
     return result
